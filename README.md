@@ -1,3 +1,4 @@
+```
 📦 src/main/java/com/sgu/tuyensinh
  ┣ 📂 controller       <-- (Chứa Anh Phục Vụ)
  ┃  ┣ 📜 WebController.java    (Xử lý màn hình Đăng nhập/Đăng xuất, Kết quả)
@@ -14,9 +15,11 @@
  ┃   ┗ 📜 NguyenVongXetTuyen.java(Mã ngành, Điểm xét, Trạng thái Đậu/Rớt)
  ┃
  ┗ 📜 TuyensinhApplication.java (Main)
+
 📦 src/main/resources
  ┗ 📜 application.properties    <-- (Chứa cấu hình kết nối Database MySQL của ông)
- ┃
+
 📦 src/main/webapp/WEB-INF/views  <-- (Chứa Bàn Ăn - Code HTML/CSS/Bootstrap)
  ┣ 📜 login.jsp                 (Trang đăng nhập)
  ┗ 📜 ketqua.jsp                (Trang hiển thị bảng nguyện vọng)
+```
