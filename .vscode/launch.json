@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-TuyensinhApplication<tuyensinh>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.sgu.tuyensinh.TuyensinhApplication",
+            "projectName": "tuyensinh",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

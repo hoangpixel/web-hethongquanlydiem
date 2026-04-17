@@ -57,6 +57,9 @@
                                                 <c:when test="${nv.nvKetQua == 'Đã trượt'}">
                                                     <span class="badge bg-danger">Đã trượt</span>
                                                 </c:when>
+                                                <c:when test="${nv.nvKetQua == 'Chờ xét'}">
+                                                    <span class="badge bg-primary">Chờ xét</span>
+                                                </c:when>
                                                 <c:otherwise>
                                                     <span class="badge bg-warning text-dark">Không xét</span>
                                                 </c:otherwise>
