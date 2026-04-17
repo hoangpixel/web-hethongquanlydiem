@@ -1,0 +1,16 @@
+# Bỏ qua thư mục build của Maven
+target/
+*.jar
+*.war
+*.ear
+
+# Bỏ qua cấu hình cá nhân của VS Code
+.vscode/
+
+# Bỏ qua các file cấu hình môi trường (nếu sau này có xài)
+.env
+application-dev.properties
+
+# Bỏ qua file rác của hệ điều hành
+.DS_Store
+Thumbs.db
