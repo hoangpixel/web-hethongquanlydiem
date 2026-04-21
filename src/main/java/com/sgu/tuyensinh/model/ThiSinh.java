@@ -34,6 +34,9 @@ public class ThiSinh {
     @Column(name = "email", length = 100)
     private String email;
 
+    @Column(name = "dienThoai", length = 20)
+    private String sdt;
+
     // --- HÀM KHỞI TẠO RỖNG ---
     public ThiSinh() {}
 
@@ -66,4 +69,7 @@ public class ThiSinh {
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+
+    public String getSdt() { return sdt; }
+    public void setSdt(String sdt) { this.sdt = sdt; }
 }

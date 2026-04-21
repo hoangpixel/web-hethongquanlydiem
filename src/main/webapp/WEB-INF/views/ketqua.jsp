@@ -65,9 +65,26 @@
                     <div class="ts-label">Email</div>
                     <div class="ts-value">${thiSinh.email}</div>
                 </div>
+                <div class="ts-item">
+                    <div class="ts-label">Số Điện Thoại</div>
+                    <div class="ts-value">${thiSinh.sdt}</div>
+                </div>
+            </div>
+           <!-- ĐIỂM THI -->
+            <div class="score-section mt-4">
+                <div class="row g-3">
+                    <c:forEach var="mon" items="${diemThiSinh.diemTheoMon}">
+                        <div class="col-md-2 col-6">
+                            <div class="score-card">
+                                <div class="score-label">${mon.tenMon}</div>
+                                <div class="score-value">${mon.diem}</div>
+                            </div>
+                        </div>
+                    </c:forEach>
+                </div>
             </div>
         </div>
-
+ 
         <!-- SECTION 2: DANH SÁCH NGUYỆN VỌNG -->
         <div class="info-card">
             <div class="card-title-bar">

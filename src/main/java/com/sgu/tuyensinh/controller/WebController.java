@@ -9,8 +9,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.sgu.tuyensinh.model.DiemThiSinh;
 import com.sgu.tuyensinh.model.NguyenVongXetTuyen;
 import com.sgu.tuyensinh.model.ThiSinh;
+import com.sgu.tuyensinh.repository.DiemThiSinhRepository;
 import com.sgu.tuyensinh.service.TuyensinhService;
 
 import jakarta.servlet.http.HttpSession;
@@ -20,6 +22,9 @@ public class WebController {
 
     @Autowired
     private TuyensinhService tuyensinhService;
+
+    @Autowired
+    private DiemThiSinhRepository diemThiSinhRepository;
 
     // 1. KHI NGƯỜI DÙNG GÕ localhost:8080/login -> HIỆN TRANG ĐĂNG NHẬP
     @GetMapping("/login")
@@ -59,6 +64,9 @@ public class WebController {
 
         // Lấy danh sách nguyện vọng từ DB
         List<NguyenVongXetTuyen> danhSachNV = tuyensinhService.layDanhSachNguyenVong(ts.getCccd());
+
+        DiemThiSinh diemThiSinh = diemThiSinhRepository.findByCccd(ts.getCccd());
+        model.addAttribute("diemThiSinh", diemThiSinh);
 
         // Đóng gói đẩy ra file ketqua.jsp
         model.addAttribute("thiSinh", ts);

@@ -75,7 +75,7 @@ body {
 .card-title-bar h5 { font-size: 0.95rem; font-weight: 700; color: var(--text); margin: 0; }
 .card-title-bar small { font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 1px; }
 /* THÔNG TIN THÍ SINH */
-.ts-grid { display: grid; grid-template-columns: repeat(4, 1fr); }
+.ts-grid { display: grid; grid-template-columns: repeat(5, 1fr); }
 .ts-item { padding: 0.9rem 1.25rem; border-right: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6; }
 .ts-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #9ca3af; margin-bottom: 3px; }
 .ts-value { font-size: 0.9rem; font-weight: 600; color: var(--text); }
@@ -120,6 +120,67 @@ body {
 /* Empty */
 .empty-box { text-align: center; padding: 2.5rem 1rem; color: #9ca3af; }
 .e-icon { font-size: 2rem; margin-bottom: 8px; opacity: 0.5; }
+/* HÀNG ĐIỂM THI */
+.score-section{
+    padding: 1rem 1.25rem 1.3rem;
+    border-top: 1px solid #f3f4f6;
+}
+.score-section .row{
+    row-gap: 14px;
+}
+.score-card{
+    background: #f9fbff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 10px;
+    text-align: center;
+    height: 85px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+    transition: all 0.15s ease;
+}
+.score-card:hover{
+    background: #eef4ff;
+    transform: translateY(-2px);
+}
+.score-card:has(.score-value){
+    background: var(--primary-light);
+}
+.score-card:has(.score-value) .score-label{
+    color: var(--primary-dark);
+}
+.score-label{
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #9ca3af;
+}
+.score-value{
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--primary);
+    margin-top: 3px;
+}
+@media (max-width: 576px) {
+    .score-section{
+        padding: 0.8rem 1rem 1rem;
+    }
+    .score-card{
+        height: 75px;
+        padding: 10px 6px;
+    }
+    .score-label{
+        font-size: 0.65rem;
+    }
+
+    .score-value{
+        font-size: 1.15rem;
+    }
+}
 /* Responsive */
 @media (max-width: 576px) {
     .ts-grid { grid-template-columns: 1fr 1fr; }
