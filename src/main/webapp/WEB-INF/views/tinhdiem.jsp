@@ -316,6 +316,22 @@
                                         <strong class="text-danger" style="font-size: 2.2rem;">${tongDiem}</strong>
                                     </h4>
                                 </div>
+                                <div class="mt-4 text-center">
+                                    <div style="font-size: 1.1rem; color: var(--muted); margin-bottom: 8px;">
+                                        Điểm sàn yêu cầu: <strong style="color: var(--ink);">${diemSan != null ? diemSan : 'Chưa công bố'}</strong>
+                                    </div>
+                                    <c:choose>
+                                        <c:when test="${diemSan == null}">
+                                            <span class="badge bg-secondary fs-6 px-4 py-2 rounded-pill shadow-sm">ĐANG CẬP NHẬT ĐIỂM SÀN</span>
+                                        </c:when>
+                                        <c:when test="${datDiemSan}">
+                                            <span class="badge bg-success fs-5 px-4 py-2 rounded-pill shadow-sm" style="background: linear-gradient(45deg, #10b981, #059669) !important;">🎉 ĐỦ ĐIỀU KIỆN ĐIỂM SÀN</span>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <span class="badge bg-danger fs-5 px-4 py-2 rounded-pill shadow-sm" style="background: linear-gradient(45deg, #ef4444, #dc2626) !important;">❌ KHÔNG ĐẠT ĐIỂM SÀN</span>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </div>
                             </div>
                         </c:if>
 
@@ -431,6 +447,22 @@
                                                     <strong class="text-danger" style="font-size: 2.2rem;">${kq.tongDiemXetTuyen}</strong>
                                                 </h4>
                                             </div>
+                                            <div class="mt-4 text-center">
+                                                <div style="font-size: 1.1rem; color: var(--muted); margin-bottom: 8px;">
+                                                    Điểm sàn yêu cầu: <strong style="color: var(--ink);">${kq.diemSan != null ? kq.diemSan : 'Chưa công bố'}</strong>
+                                                </div>
+                                                <c:choose>
+                                                    <c:when test="${kq.diemSan == null}">
+                                                        <span class="badge bg-secondary fs-6 px-4 py-2 rounded-pill shadow-sm">ĐANG CẬP NHẬT ĐIỂM SÀN</span>
+                                                    </c:when>
+                                                    <c:when test="${kq.datDiemSan}">
+                                                        <span class="badge bg-success fs-5 px-4 py-2 rounded-pill shadow-sm" style="background: linear-gradient(45deg, #10b981, #059669) !important;">ĐỦ ĐIỀU KIỆN ĐIỂM SÀN</span>
+                                                    </c:when>
+                                                    <c:otherwise>
+                                                        <span class="badge bg-danger fs-5 px-4 py-2 rounded-pill shadow-sm" style="background: linear-gradient(45deg, #ef4444, #dc2626) !important;">KHÔNG ĐẠT ĐIỂM SÀN</span>
+                                                    </c:otherwise>
+                                                </c:choose>
+                                            </div>
 
                                         </div>
                                     </c:forEach>
@@ -460,11 +492,17 @@
         const inputsMon = document.querySelectorAll('.input-mon');
         const diemDGNL = document.getElementById('diemDGNL');
 
+        // Gắn mặc định min = 0 cho tất cả để chống nhập điểm âm
+        inputsMon.forEach(input => input.min = 0);
+        diemDGNL.min = 0;
+
         if (phuongThuc === 'DGNL') {
             nhomDiem8Mon.style.display = 'none';
             nhomDiemDGNL.style.display = 'block';
             inputsMon.forEach(input => input.required = false);
+            
             diemDGNL.required = true;
+            diemDGNL.max = 1200; // ĐGNL max là 1200
             return;
         }
 
@@ -472,13 +510,38 @@
         nhomDiemDGNL.style.display = 'none';
         diemDGNL.required = false;
 
-        // Đổi placeholder tùy phương thức
-        const placeholderText = phuongThuc === 'THPT' ? 'Thang 10' : 'Thang 150';
-        inputsMon.forEach(input => input.placeholder = placeholderText);
+        // Đổi placeholder và giới hạn điểm tối đa tùy phương thức
+        if (phuongThuc === 'THPT') {
+            inputsMon.forEach(input => {
+                input.placeholder = 'Thang 10';
+                input.max = 10; // THPT max là 10
+            });
+        } else { // Phương thức VSAT
+            inputsMon.forEach(input => {
+                input.placeholder = 'Thang 150';
+                input.max = 150; // VSAT max là 150
+            });
+        }
     }
 
+    // --- BÍ KÍP CHỐNG NHẬP LỐ ---
+    // Lắng nghe sự kiện gõ phím để tự động chặn ngay lập tức
+    document.querySelectorAll('input[type="number"]').forEach(input => {
+        input.addEventListener('input', function() {
+            // Nếu người dùng nhập giá trị lớn hơn max cho phép -> Ép về max
+            if (this.value !== "" && parseFloat(this.value) > parseFloat(this.max)) {
+                this.value = this.max;
+            }
+            // Nếu nhập số âm -> Ép về 0
+            if (this.value !== "" && parseFloat(this.value) < parseFloat(this.min)) {
+                this.value = this.min;
+            }
+        });
+    });
+
+    // Chạy các sự kiện khi load trang và khi đổi phương thức
     document.getElementById('phuongThuc').addEventListener('change', capNhatFormTheoPhuongThuc);
-    capNhatFormTheoPhuongThuc();
+    capNhatFormTheoPhuongThuc(); // Khởi tạo lần đầu lúc mới vào trang
 </script>
 </body>
 </html>

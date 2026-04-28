@@ -80,6 +80,16 @@ public class TrangChuController {
         model.addAttribute("khuVucUuTienNhap", khuVucUuTien == null ? "KV3" : khuVucUuTien.trim().toUpperCase());
         model.addAttribute("doiTuongUuTienNhap", doiTuongUuTien == null ? "0" : doiTuongUuTien.trim().toUpperCase());
 
+
+        Nganh nganhThongTin = nganhRepository.findByMaNganh(maNganhChuan);
+        Double diemSan = null;
+        if (nganhThongTin != null) {
+            if ("THPT".equalsIgnoreCase(phuongThuc)) diemSan = nganhThongTin.getDiemSanThpt();
+            else if ("VSAT".equalsIgnoreCase(phuongThuc)) diemSan = nganhThongTin.getDiemSanVsat();
+            else if ("DGNL".equalsIgnoreCase(phuongThuc)) diemSan = nganhThongTin.getDiemSanDgnl();
+        }
+
+
         // Lấy TẤT CẢ tổ hợp của ngành này từ DB
         // LƯU Ý: Đệ tử phải có hàm findByMaNganh trong ToHopMonThiRepository nhé!
         List<ToHopMonThi> danhSachToHop = toHopRepo.findByMaNganh(maNganhChuan);
@@ -96,7 +106,7 @@ public class TrangChuController {
                 return "tinhdiem";
             }
             
-            Nganh nganhThongTin = nganhRepository.findByMaNganh(maNganhChuan);
+            // Nganh nganhThongTin = nganhRepository.findByMaNganh(maNganhChuan);
             String toHopGoc = (nganhThongTin != null && nganhThongTin.getToHopGoc() != null) 
                               ? nganhThongTin.getToHopGoc() 
                               : danhSachToHop.get(0).getMaToHop(); // Fallback nếu ngành quên cài tổ hợp gốc
@@ -113,6 +123,9 @@ public class TrangChuController {
             double diemUuTienSauDieuChinh = tinhDiemUuTienSauDieuChinh(diemNenCong, diemUuTienGoc);
             double tongDiemXetTuyen = diemNenCong + diemUuTienSauDieuChinh;
 
+                    // So sánh và đẩy điểm sàn ra
+            model.addAttribute("diemSan", diemSan);
+            model.addAttribute("datDiemSan", (diemSan == null || tongDiemXetTuyen >= diemSan));
             model.addAttribute("chiTietDGNL", chiTietDGNL);
             model.addAttribute("diemDGNLNhapLamTron", lamTron2So(diemDGNL));
             model.addAttribute("diemNenXetTuyen", lamTron2So(diemNenXetTuyen));
@@ -203,6 +216,9 @@ public class TrangChuController {
             kqToHop.put("diemUuTienSauDieuChinh", lamTron2So(diemUuTienSauDieuChinh));
             kqToHop.put("tongDiemXetTuyen", lamTron2So(tongDiemXetTuyen)); // Điểm chốt hạ
             
+            kqToHop.put("diemSan", diemSan);
+            kqToHop.put("datDiemSan", (diemSan == null || tongDiemXetTuyen >= diemSan));
+
             ketQuaTatCaToHop.add(kqToHop);
         }
 
