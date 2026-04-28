@@ -146,10 +146,10 @@ body {
     background: #eef4ff;
     transform: translateY(-2px);
 }
-.score-card:has(.score-value){
+.score-card.has-value{
     background: var(--primary-light);
 }
-.score-card:has(.score-value) .score-label{
+.score-card.has-value .score-label{
     color: var(--primary-dark);
 }
 .score-label{

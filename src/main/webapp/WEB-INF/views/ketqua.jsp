@@ -9,7 +9,7 @@
     <title>Kết Quả Xét Tuyển</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ketqua.css" />
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ketqua.css?v=20260424" />
 </head>
 <body>
 <!-- NAVBAR -->
@@ -18,6 +18,20 @@
         <a class="navbar-brand" href="#">
             <img src="${pageContext.request.contextPath}/img/logo.png" alt="SGU Logo" style="height:32px; margin-right:8px; border-radius:4px;">Tra Cứu Tuyển Sinh SGU
         </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-4">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#" style="font-weight: 600; color: #0d6efd; border-bottom: 2px solid #0d6efd;">Kết Quả Xét Tuyển</a>
+                </li>
+                <li class="nav-item ms-3">
+                    <a class="nav-link" href="/tinh-diem" style="font-weight: 500;">Tính Điểm Tốt Nghiệp</a>
+                </li>
+            </ul>
+        </div>
         <div class="d-flex align-items-center gap-3 ms-auto">
             <span class="nav-greeting d-none d-sm-inline">
                 Xin chào: <strong>${thiSinh.hoTen}</strong>
@@ -75,7 +89,7 @@
                 <div class="row g-3">
                     <c:forEach var="mon" items="${diemThiSinh.diemTheoMon}">
                         <div class="col-md-2 col-6">
-                            <div class="score-card">
+                            <div class="score-card${not empty mon.diem ? ' has-value' : ''}">
                                 <div class="score-label">${mon.tenMon}</div>
                                 <div class="score-value">${mon.diem}</div>
                             </div>
