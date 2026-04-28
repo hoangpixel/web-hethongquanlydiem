@@ -13,6 +13,7 @@
                 href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700&display=swap"
                 rel="stylesheet">
             <link rel="stylesheet" href="${pageContext.request.contextPath}/css/login.css" />
+            <link rel="icon" href="${pageContext.request.contextPath}/img/logo.png" type="image/png">
         </head>
 
         <body>

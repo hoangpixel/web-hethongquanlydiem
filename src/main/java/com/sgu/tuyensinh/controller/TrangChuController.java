@@ -1,6 +1,8 @@
 package com.sgu.tuyensinh.controller;
 
+import com.sgu.tuyensinh.model.Nganh;
 import com.sgu.tuyensinh.model.ToHopMonThi;
+import com.sgu.tuyensinh.repository.NganhRepository;
 import com.sgu.tuyensinh.repository.ToHopMonThiRepository;
 import com.sgu.tuyensinh.service.TinhDiemService;
 import com.sgu.tuyensinh.service.TinhDiemService.KetQuaQuyDoiChiTiet;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,19 +29,27 @@ public class TrangChuController {
     @Autowired
     private ToHopMonThiRepository toHopRepo; 
 
+    @Autowired
+    private NganhRepository nganhRepository;
+
     @GetMapping("/tinh-diem")
     public String hienThiTrangChu() {
         return "tinhdiem"; 
     }
 
-    @PostMapping("/tinh-diem")
+@PostMapping("/tinh-diem")
     public String tinhDiem(
             @RequestParam("phuongThuc") String phuongThuc,
             @RequestParam("maNganh") String maNganh,
-            @RequestParam("maToHop") String maToHop,
-            @RequestParam(value = "diemMon1", required = false) Double diemMon1,
-            @RequestParam(value = "diemMon2", required = false) Double diemMon2,
-            @RequestParam(value = "diemMon3", required = false) Double diemMon3,
+            // Nhận 8 đầu điểm (có thể null nếu thí sinh không nhập)
+            @RequestParam(value = "diemToan", required = false) Double dToan,
+            @RequestParam(value = "diemVan", required = false) Double dVan,
+            @RequestParam(value = "diemAnh", required = false) Double dAnh,
+            @RequestParam(value = "diemLy", required = false) Double dLy,
+            @RequestParam(value = "diemHoa", required = false) Double dHoa,
+            @RequestParam(value = "diemSinh", required = false) Double dSinh,
+            @RequestParam(value = "diemSu", required = false) Double dSu,
+            @RequestParam(value = "diemDia", required = false) Double dDia,
             @RequestParam(value = "diemDGNL", required = false) Double diemDGNL,
             @RequestParam(value = "diemCong", required = false) Double diemCongNhap,
             @RequestParam(value = "khuVucUuTien", required = false) String khuVucUuTien,
@@ -46,14 +57,14 @@ public class TrangChuController {
             Model model) {
 
         String maNganhChuan = maNganh == null ? "" : maNganh.trim();
-        String maToHopChuan = maToHop == null ? "" : maToHop.trim().toUpperCase();
 
+        // Giữ lại dữ liệu để hiển thị trên form (nếu cần)
         model.addAttribute("phuongThucNhap", phuongThuc);
         model.addAttribute("maNganhNhap", maNganhChuan);
-        model.addAttribute("maToHopNhap", maToHopChuan);
-        model.addAttribute("diem1Nhap", diemMon1);
-        model.addAttribute("diem2Nhap", diemMon2);
-        model.addAttribute("diem3Nhap", diemMon3);
+        model.addAttribute("dToan", dToan); model.addAttribute("dVan", dVan);
+        model.addAttribute("dAnh", dAnh); model.addAttribute("dLy", dLy);
+        model.addAttribute("dHoa", dHoa); model.addAttribute("dSinh", dSinh);
+        model.addAttribute("dSu", dSu); model.addAttribute("dDia", dDia);
         model.addAttribute("diemDGNLNhap", diemDGNL);
 
         double diemCong = diemCongNhap == null ? 0.0 : diemCongNhap;
@@ -61,44 +72,49 @@ public class TrangChuController {
         double diemDoiTuong = tinhDiemDoiTuong(doiTuongUuTien);
         double diemUuTienGoc = diemKhuVuc + diemDoiTuong;
 
+        model.addAttribute("diemCong", lamTron2So(diemCong));
+        model.addAttribute("diemKhuVuc", lamTron2So(diemKhuVuc));
+        model.addAttribute("diemDoiTuong", lamTron2So(diemDoiTuong));
+
         model.addAttribute("diemCongNhap", lamTron2So(diemCong));
         model.addAttribute("khuVucUuTienNhap", khuVucUuTien == null ? "KV3" : khuVucUuTien.trim().toUpperCase());
         model.addAttribute("doiTuongUuTienNhap", doiTuongUuTien == null ? "0" : doiTuongUuTien.trim().toUpperCase());
 
-        ToHopMonThi th = toHopRepo.findByMaNganhAndMaToHop(maNganhChuan, maToHopChuan);
+        // Lấy TẤT CẢ tổ hợp của ngành này từ DB
+        // LƯU Ý: Đệ tử phải có hàm findByMaNganh trong ToHopMonThiRepository nhé!
+        List<ToHopMonThi> danhSachToHop = toHopRepo.findByMaNganh(maNganhChuan);
 
-        if (th == null) {
-            model.addAttribute("error", "Không tìm thấy thông tin tổ hợp cho ngành này!");
+        if (danhSachToHop == null || danhSachToHop.isEmpty()) {
+            model.addAttribute("error", "Không tìm thấy thông tin tổ hợp nào cho ngành này!");
             return "tinhdiem";
         }
 
-        model.addAttribute("tenMon1", th.getThMon1());
-        model.addAttribute("tenMon2", th.getThMon2());
-        model.addAttribute("tenMon3", th.getThMon3());
-        model.addAttribute("hs1", th.getHsMon1());
-        model.addAttribute("hs2", th.getHsMon2());
-        model.addAttribute("hs3", th.getHsMon3());
-
+        // XỬ LÝ PHƯƠNG THỨC ĐGNL (Vì ĐGNL thường chỉ có 1 điểm duy nhất)
         if ("DGNL".equalsIgnoreCase(phuongThuc)) {
             if (diemDGNL == null) {
-                model.addAttribute("error", "Vui lòng nhập điểm ĐGNL.");
+                model.addAttribute("error", "Vui lòng nhập điểm bài thi ĐGNL.");
                 return "tinhdiem";
             }
-
-            KetQuaQuyDoiChiTiet chiTietDGNL = tinhDiemService.quyDoiDiemDGNLChiTiet(maToHopChuan, diemDGNL);
+            
+            Nganh nganhThongTin = nganhRepository.findByMaNganh(maNganhChuan);
+            String toHopGoc = (nganhThongTin != null && nganhThongTin.getToHopGoc() != null) 
+                              ? nganhThongTin.getToHopGoc() 
+                              : danhSachToHop.get(0).getMaToHop(); // Fallback nếu ngành quên cài tổ hợp gốc
+            
+            KetQuaQuyDoiChiTiet chiTietDGNL = tinhDiemService.quyDoiDiemDGNLChiTiet(toHopGoc, diemDGNL);
+            model.addAttribute("toHopGocHienThi", toHopGoc);
             if (chiTietDGNL.getDiemQuyDoi() == null) {
-                model.addAttribute("error", "Không tìm thấy mốc quy đổi ĐGNL cho tổ hợp hoặc điểm đã nhập.");
+                model.addAttribute("error", "Không tìm thấy mốc quy đổi ĐGNL.");
                 return "tinhdiem";
             }
-
-            model.addAttribute("chiTietDGNL", chiTietDGNL);
-            model.addAttribute("diemDGNLNhapLamTron", lamTron2So(diemDGNL));
 
             double diemNenXetTuyen = chiTietDGNL.getDiemQuyDoi();
             double diemNenCong = diemNenXetTuyen + diemCong;
             double diemUuTienSauDieuChinh = tinhDiemUuTienSauDieuChinh(diemNenCong, diemUuTienGoc);
             double tongDiemXetTuyen = diemNenCong + diemUuTienSauDieuChinh;
 
+            model.addAttribute("chiTietDGNL", chiTietDGNL);
+            model.addAttribute("diemDGNLNhapLamTron", lamTron2So(diemDGNL));
             model.addAttribute("diemNenXetTuyen", lamTron2So(diemNenXetTuyen));
             model.addAttribute("diemCong", lamTron2So(diemCong));
             model.addAttribute("diemKhuVuc", lamTron2So(diemKhuVuc));
@@ -107,112 +123,123 @@ public class TrangChuController {
             model.addAttribute("diemUuTienSauDieuChinh", lamTron2So(diemUuTienSauDieuChinh));
             model.addAttribute("tongDiemXetTuyen", lamTron2So(tongDiemXetTuyen));
             model.addAttribute("congThucDiemUuTien", taoCongThucDiemUuTien(diemNenCong, diemUuTienGoc, diemUuTienSauDieuChinh));
-
             model.addAttribute("kieuKetQua", "DGNL");
-            model.addAttribute("tongDiem", lamTron2So(tongDiemXetTuyen));
+            model.addAttribute("tongDiem", lamTron2So(tongDiemXetTuyen)); // Giữ biến tongDiem để hiển thị khối KQ
+            
             return "tinhdiem";
         }
 
-        if (diemMon1 == null || diemMon2 == null || diemMon3 == null) {
-            model.addAttribute("error", "Vui lòng nhập đủ 3 điểm môn.");
-            return "tinhdiem";
-        }
+        // XỬ LÝ PHƯƠNG THỨC THPT VÀ V-SAT CHO TẤT CẢ TỔ HỢP
+        List<Map<String, Object>> ketQuaTatCaToHop = new ArrayList<>();
 
-        double diemQuyDoi1;
-        double diemQuyDoi2;
-        double diemQuyDoi3;
-        List<Map<String, Object>> chiTietMonList = new ArrayList<>();
+        for (ToHopMonThi th : danhSachToHop) {
+            Double diemMon1 = getDiemTheoMa(th.getThMon1(), dToan, dVan, dAnh, dLy, dHoa, dSinh, dSu, dDia);
+            Double diemMon2 = getDiemTheoMa(th.getThMon2(), dToan, dVan, dAnh, dLy, dHoa, dSinh, dSu, dDia);
+            Double diemMon3 = getDiemTheoMa(th.getThMon3(), dToan, dVan, dAnh, dLy, dHoa, dSinh, dSu, dDia);
 
-        if ("THPT".equalsIgnoreCase(phuongThuc)) {
-            diemQuyDoi1 = lamTron2So(diemMon1);
-            diemQuyDoi2 = lamTron2So(diemMon2);
-            diemQuyDoi3 = lamTron2So(diemMon3);
-
-            chiTietMonList.add(taoChiTietMon(th.getThMon1(), th.getHsMon1(), diemMon1, diemQuyDoi1,
-                "Giữ nguyên điểm THPT",
-                "Không áp dụng mốc quy đổi",
-                "Điểm quy đổi = Điểm THPT",
-                String.format("Điểm quy đổi = %s = %s", fmt(diemMon1), fmt(diemQuyDoi1)),
-                "Phương thức THPT dùng trực tiếp điểm thang 10."));
-
-            chiTietMonList.add(taoChiTietMon(th.getThMon2(), th.getHsMon2(), diemMon2, diemQuyDoi2,
-                "Giữ nguyên điểm THPT",
-                "Không áp dụng mốc quy đổi",
-                "Điểm quy đổi = Điểm THPT",
-                String.format("Điểm quy đổi = %s = %s", fmt(diemMon2), fmt(diemQuyDoi2)),
-                "Phương thức THPT dùng trực tiếp điểm thang 10."));
-
-            chiTietMonList.add(taoChiTietMon(th.getThMon3(), th.getHsMon3(), diemMon3, diemQuyDoi3,
-                "Giữ nguyên điểm THPT",
-                "Không áp dụng mốc quy đổi",
-                "Điểm quy đổi = Điểm THPT",
-                String.format("Điểm quy đổi = %s = %s", fmt(diemMon3), fmt(diemQuyDoi3)),
-                "Phương thức THPT dùng trực tiếp điểm thang 10."));
-        } else {
-            KetQuaQuyDoiChiTiet qd1 = tinhDiemService.quyDoiDiemVSATChiTiet(th.getThMon1(), diemMon1);
-            KetQuaQuyDoiChiTiet qd2 = tinhDiemService.quyDoiDiemVSATChiTiet(th.getThMon2(), diemMon2);
-            KetQuaQuyDoiChiTiet qd3 = tinhDiemService.quyDoiDiemVSATChiTiet(th.getThMon3(), diemMon3);
-
-            if (qd1.getDiemQuyDoi() == null || qd2.getDiemQuyDoi() == null || qd3.getDiemQuyDoi() == null) {
-                model.addAttribute("error", "Không tìm thấy mốc quy đổi V-SAT cho một trong các môn của tổ hợp này.");
-                return "tinhdiem";
+            // Nếu thí sinh nhập KHÔNG ĐỦ 3 môn của tổ hợp này -> Bỏ qua tổ hợp này
+            if (diemMon1 == null || diemMon2 == null || diemMon3 == null) {
+                continue; 
             }
 
-            diemQuyDoi1 = qd1.getDiemQuyDoi();
-            diemQuyDoi2 = qd2.getDiemQuyDoi();
-            diemQuyDoi3 = qd3.getDiemQuyDoi();
+            double diemQuyDoi1, diemQuyDoi2, diemQuyDoi3;
+            List<Map<String, Object>> chiTietMonList = new ArrayList<>();
 
-            chiTietMonList.add(taoChiTietMon(th.getThMon1(), th.getHsMon1(), diemMon1, diemQuyDoi1,
-                qd1.getCachTinh(), qd1.getMocQuyDoi(), qd1.getCongThucTongQuat(), qd1.getCongThucThaySo(), qd1.getGhiChu()));
-            chiTietMonList.add(taoChiTietMon(th.getThMon2(), th.getHsMon2(), diemMon2, diemQuyDoi2,
-                qd2.getCachTinh(), qd2.getMocQuyDoi(), qd2.getCongThucTongQuat(), qd2.getCongThucThaySo(), qd2.getGhiChu()));
-            chiTietMonList.add(taoChiTietMon(th.getThMon3(), th.getHsMon3(), diemMon3, diemQuyDoi3,
-                qd3.getCachTinh(), qd3.getMocQuyDoi(), qd3.getCongThucTongQuat(), qd3.getCongThucThaySo(), qd3.getGhiChu()));
+            if ("THPT".equalsIgnoreCase(phuongThuc)) {
+                diemQuyDoi1 = lamTron2So(diemMon1);
+                diemQuyDoi2 = lamTron2So(diemMon2);
+                diemQuyDoi3 = lamTron2So(diemMon3);
+
+                chiTietMonList.add(taoChiTietMon(th.getThMon1(), th.getHsMon1(), diemMon1, diemQuyDoi1, 
+                    "Giữ nguyên THPT", "-", "Quy đổi = Điểm THPT", "Điểm quy đổi = " + fmt(diemMon1), "Không cần nội suy"));
+                chiTietMonList.add(taoChiTietMon(th.getThMon2(), th.getHsMon2(), diemMon2, diemQuyDoi2, 
+                    "Giữ nguyên THPT", "-", "Quy đổi = Điểm THPT", "Điểm quy đổi = " + fmt(diemMon2), "Không cần nội suy"));
+                chiTietMonList.add(taoChiTietMon(th.getThMon3(), th.getHsMon3(), diemMon3, diemQuyDoi3, 
+                    "Giữ nguyên THPT", "-", "Quy đổi = Điểm THPT", "Điểm quy đổi = " + fmt(diemMon3), "Không cần nội suy"));
+                // chiTietMonList.add(taoChiTietMon(th.getThMon1(), th.getHsMon1(), diemMon1, diemQuyDoi1, "Giữ nguyên THPT", "-", "Quy đổi = Điểm", "-", "-"));
+                // chiTietMonList.add(taoChiTietMon(th.getThMon2(), th.getHsMon2(), diemMon2, diemQuyDoi2, "Giữ nguyên THPT", "-", "Quy đổi = Điểm", "-", "-"));
+                // chiTietMonList.add(taoChiTietMon(th.getThMon3(), th.getHsMon3(), diemMon3, diemQuyDoi3, "Giữ nguyên THPT", "-", "Quy đổi = Điểm", "-", "-"));
+            } else {
+                KetQuaQuyDoiChiTiet qd1 = tinhDiemService.quyDoiDiemVSATChiTiet(th.getThMon1(), diemMon1);
+                KetQuaQuyDoiChiTiet qd2 = tinhDiemService.quyDoiDiemVSATChiTiet(th.getThMon2(), diemMon2);
+                KetQuaQuyDoiChiTiet qd3 = tinhDiemService.quyDoiDiemVSATChiTiet(th.getThMon3(), diemMon3);
+
+                if (qd1.getDiemQuyDoi() == null || qd2.getDiemQuyDoi() == null || qd3.getDiemQuyDoi() == null) {
+                    continue; // Lỗi quy đổi thì bỏ qua tổ hợp này
+                }
+
+                diemQuyDoi1 = qd1.getDiemQuyDoi();
+                diemQuyDoi2 = qd2.getDiemQuyDoi();
+                diemQuyDoi3 = qd3.getDiemQuyDoi();
+
+                chiTietMonList.add(taoChiTietMon(th.getThMon1(), th.getHsMon1(), diemMon1, diemQuyDoi1, qd1.getCachTinh(), qd1.getMocQuyDoi(), qd1.getCongThucTongQuat(), qd1.getCongThucThaySo(), qd1.getGhiChu()));
+                chiTietMonList.add(taoChiTietMon(th.getThMon2(), th.getHsMon2(), diemMon2, diemQuyDoi2, qd2.getCachTinh(), qd2.getMocQuyDoi(), qd2.getCongThucTongQuat(), qd2.getCongThucThaySo(), qd2.getGhiChu()));
+                chiTietMonList.add(taoChiTietMon(th.getThMon3(), th.getHsMon3(), diemMon3, diemQuyDoi3, qd3.getCachTinh(), qd3.getMocQuyDoi(), qd3.getCongThucTongQuat(), qd3.getCongThucThaySo(), qd3.getGhiChu()));
+            }
+
+            double tongDiem = (diemQuyDoi1 * th.getHsMon1()) + (diemQuyDoi2 * th.getHsMon2()) + (diemQuyDoi3 * th.getHsMon3());
+            double tongHeSo = th.getHsMon1() + th.getHsMon2() + th.getHsMon3();
+            double tongDiemQuyVeThang30 = tongHeSo == 0 ? 0 : (tongDiem / tongHeSo) * 3;
+
+            double diemNenXetTuyen = tongDiemQuyVeThang30;
+            double diemNenCong = diemNenXetTuyen + diemCong;
+            double diemUuTienSauDieuChinh = tinhDiemUuTienSauDieuChinh(diemNenCong, diemUuTienGoc);
+            double tongDiemXetTuyen = diemNenCong + diemUuTienSauDieuChinh;
+
+            // Gom TẤT CẢ thông tin của tổ hợp này vào một cái Map để gửi ra giao diện
+            Map<String, Object> kqToHop = new HashMap<>();
+            kqToHop.put("maToHop", th.getMaToHop());
+            kqToHop.put("chiTietMonList", chiTietMonList);
+            kqToHop.put("tenMon1", th.getThMon1()); kqToHop.put("hs1", th.getHsMon1()); kqToHop.put("diemQuyDoi1", diemQuyDoi1);
+            kqToHop.put("tenMon2", th.getThMon2()); kqToHop.put("hs2", th.getHsMon2()); kqToHop.put("diemQuyDoi2", diemQuyDoi2);
+            kqToHop.put("tenMon3", th.getThMon3()); kqToHop.put("hs3", th.getHsMon3()); kqToHop.put("diemQuyDoi3", diemQuyDoi3);
+            
+            kqToHop.put("congThucTongDiem", String.format("(%s x %s) + (%s x %s) + (%s x %s) = %s", fmt(diemQuyDoi1), fmt(th.getHsMon1()), fmt(diemQuyDoi2), fmt(th.getHsMon2()), fmt(diemQuyDoi3), fmt(th.getHsMon3()), fmt(tongDiem)));
+            kqToHop.put("congThucTongHeSo", String.format("%s + %s + %s = %s", fmt(th.getHsMon1()), fmt(th.getHsMon2()), fmt(th.getHsMon3()), fmt(tongHeSo)));
+            kqToHop.put("congThucQuyVe30", String.format("(%s / %s) x 3 = %s", fmt(tongDiem), fmt(tongHeSo), fmt(tongDiemQuyVeThang30)));
+            kqToHop.put("congThucDiemUuTien", taoCongThucDiemUuTien(diemNenCong, diemUuTienGoc, diemUuTienSauDieuChinh));
+            
+            kqToHop.put("diemNenXetTuyen", lamTron2So(diemNenXetTuyen));
+            kqToHop.put("diemUuTienSauDieuChinh", lamTron2So(diemUuTienSauDieuChinh));
+            kqToHop.put("tongDiemXetTuyen", lamTron2So(tongDiemXetTuyen)); // Điểm chốt hạ
+            
+            ketQuaTatCaToHop.add(kqToHop);
         }
 
-        double tongDiem = (diemQuyDoi1 * th.getHsMon1())
-                + (diemQuyDoi2 * th.getHsMon2())
-                + (diemQuyDoi3 * th.getHsMon3());
-        double tongHeSo = th.getHsMon1() + th.getHsMon2() + th.getHsMon3();
-        double tongDiemQuyVeThang30 = tongHeSo == 0 ? 0 : (tongDiem / tongHeSo) * 3;
+        if (ketQuaTatCaToHop.isEmpty()) {
+            model.addAttribute("error", "Các môn bạn nhập không khớp với bất kỳ tổ hợp nào của ngành này!");
+            return "tinhdiem";
+        }
 
-        model.addAttribute("chiTietMonList", chiTietMonList);
-        model.addAttribute("congThucTongDiem",
-            String.format("(%s x %s) + (%s x %s) + (%s x %s) = %s",
-                fmt(diemQuyDoi1), fmt(th.getHsMon1()),
-                fmt(diemQuyDoi2), fmt(th.getHsMon2()),
-                fmt(diemQuyDoi3), fmt(th.getHsMon3()),
-                fmt(tongDiem)));
-        model.addAttribute("congThucTongHeSo",
-            String.format("%s + %s + %s = %s",
-                fmt(th.getHsMon1()), fmt(th.getHsMon2()), fmt(th.getHsMon3()), fmt(tongHeSo)));
-        model.addAttribute("congThucQuyVe30",
-            String.format("(%s / %s) x 3 = %s",
-                fmt(tongDiem), fmt(tongHeSo), fmt(tongDiemQuyVeThang30)));
+        // BÍ KÍP CỦA SƯ PHỤ: Sắp xếp danh sách kết quả giảm dần theo điểm (tổ hợp nào điểm cao nhất nhảy lên đầu)
+        ketQuaTatCaToHop.sort((kq1, kq2) -> Double.compare((Double) kq2.get("tongDiemXetTuyen"), (Double) kq1.get("tongDiemXetTuyen")));
 
-        double diemNenXetTuyen = tongDiemQuyVeThang30;
-        double diemNenCong = diemNenXetTuyen + diemCong;
-        double diemUuTienSauDieuChinh = tinhDiemUuTienSauDieuChinh(diemNenCong, diemUuTienGoc);
-        double tongDiemXetTuyen = diemNenCong + diemUuTienSauDieuChinh;
-
-        model.addAttribute("diemNenXetTuyen", lamTron2So(diemNenXetTuyen));
-        model.addAttribute("diemCong", lamTron2So(diemCong));
-        model.addAttribute("diemKhuVuc", lamTron2So(diemKhuVuc));
-        model.addAttribute("diemDoiTuong", lamTron2So(diemDoiTuong));
-        model.addAttribute("diemUuTienGoc", lamTron2So(diemUuTienGoc));
-        model.addAttribute("diemUuTienSauDieuChinh", lamTron2So(diemUuTienSauDieuChinh));
-        model.addAttribute("tongDiemXetTuyen", lamTron2So(tongDiemXetTuyen));
-        model.addAttribute("congThucDiemUuTien", taoCongThucDiemUuTien(diemNenCong, diemUuTienGoc, diemUuTienSauDieuChinh));
-
+        model.addAttribute("ketQuaTatCaToHop", ketQuaTatCaToHop);
         model.addAttribute("kieuKetQua", "MON");
-        model.addAttribute("diemQuyDoi1", diemQuyDoi1);
-        model.addAttribute("diemQuyDoi2", diemQuyDoi2);
-        model.addAttribute("diemQuyDoi3", diemQuyDoi3);
-        model.addAttribute("tongDiem", lamTron2So(tongDiem));
-        model.addAttribute("tongHeSo", lamTron2So(tongHeSo));
-        model.addAttribute("tongDiemThang30", lamTron2So(tongDiemQuyVeThang30));
+        model.addAttribute("tongDiem", true); // Kích hoạt khối hiển thị kết quả bên file jsp
 
         return "tinhdiem"; 
+    }
+
+    // --- HÀM BỔ TRỢ ---
+    // Sư phụ dùng hàm này để gắp điểm tương ứng với mã môn trong DB
+// Sư phụ dùng hàm này để gắp điểm tương ứng với mã môn trong DB
+    private Double getDiemTheoMa(String maMon, Double to, Double va, Double an, Double ly, Double ho, Double si, Double su, Double di) {
+        if (maMon == null || maMon.trim().isEmpty()) return null;
+        switch (maMon.trim().toUpperCase()) {
+            case "TO": case "TOÁN": return to;
+            case "VA": case "VĂN": return va;
+            
+            // THÊM MÃ "N1" VÀO DÒNG NÀY ĐỂ NÓ NHẬN DIỆN MÔN TIẾNG ANH NHÉ ĐỆ TỬ
+            case "AN": case "ANH": case "N1": return an; 
+            
+            case "LI": case "LÍ": case "LÝ": return ly;
+            case "HO": case "HÓA": return ho;
+            case "SI": case "SINH": return si;
+            case "SU": case "SỬ": return su;
+            case "DI": case "ĐỊA": return di;
+            default: return null;
+        }
     }
 
     private double lamTron2So(double diem) {

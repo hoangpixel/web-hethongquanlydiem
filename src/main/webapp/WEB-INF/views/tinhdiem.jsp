@@ -5,13 +5,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Công cụ Quy Đổi Điểm V-SAT</title>
+    <title>Công cụ Quy Đổi Điểm</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="${pageContext.request.contextPath}/img/logo.png" type="image/png">
     
     <style>
         :root {
@@ -43,9 +44,6 @@
             overflow: hidden;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
-        .main-card:hover {
-            box-shadow: 0 25px 50px rgba(15, 23, 42, 0.12);
-        }
         .card-header {
             background: linear-gradient(135deg, var(--brand-1), var(--brand-2) 70%, #22d3ee);
             color: white;
@@ -53,28 +51,6 @@
             padding: 30px 24px;
             position: relative;
             border-bottom: none;
-        }
-        .card-header::after {
-            content: "";
-            position: absolute;
-            right: -30px;
-            top: -50px;
-            width: 180px;
-            height: 180px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            pointer-events: none;
-        }
-        .card-header::before {
-            content: "";
-            position: absolute;
-            left: -40px;
-            bottom: -40px;
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.08);
-            pointer-events: none;
         }
         .header-title {
             font-weight: 700;
@@ -115,10 +91,9 @@
         .form-control, .form-select {
             border-radius: 12px;
             border: 1.5px solid #cbd5e1;
-            min-height: 52px; 
-            padding: 10px 16px;
+            min-height: 45px; 
+            padding: 8px 14px;
             background-color: #f8fafc;
-            transition: all 0.2s ease;
             font-size: 1rem; 
         }
         .form-control:focus, .form-select:focus {
@@ -127,26 +102,19 @@
             box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15);
         }
         .form-label {
-            font-size: 1.1rem; 
-            margin-bottom: 8px;
+            font-size: 1.05rem; 
+            margin-bottom: 6px;
         }
         .btn-primary {
             background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
             border: none;
             border-radius: 14px;
             font-weight: 600;
-            letter-spacing: 0.5px;
             padding: 14px;
-            font-size: 1.05rem; 
-            box-shadow: 0 8px 16px rgba(14, 165, 233, 0.2);
-            transition: all 0.3s ease;
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 20px rgba(14, 165, 233, 0.3);
+            font-size: 1.1rem; 
         }
         .note {
-            color: var(--muted);
+            color: var(--brand-1);
             font-size: 0.95rem; 
             font-style: italic;
         }
@@ -154,15 +122,37 @@
             text-align: center;
             margin-top: 30px;
             color: var(--muted);
-            font-size: 1.05rem; 
-            font-weight: 500;
         }
+        /* Custom Tab UI */
+        .nav-pills .nav-link {
+            border: 1px solid #cbd5e1;
+            color: var(--muted);
+            border-radius: 10px;
+        }
+        .nav-pills .nav-link.active {
+            background: var(--brand-2);
+            border-color: var(--brand-2);
+            color: white;
+            box-shadow: 0 4px 10px rgba(14, 165, 233, 0.3);
+        }
+
         .footer-text span {
-            background: linear-gradient(120deg, var(--brand-1), var(--brand-2));
-            background-clip: text;
+            /* Dải màu cầu vồng (đỏ, cam, vàng, lục, lam, chàm, tím, đỏ) */
+            background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3, #ff0000);
+            background-size: 200% auto;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             font-weight: 700;
+            font-size: 1.1rem;
+            /* Gọi hiệu ứng chạy màu, 3s là tốc độ, linear là chạy đều, infinite là chạy lặp vô tận */
+            animation: rainbowCycle 3s linear infinite;
+        }
+
+        /* Khai báo khung hình chuyển động (Animation Keyframes) */
+        @keyframes rainbowCycle {
+            to {
+                background-position: 200% center;
+            }
         }
     </style>
 </head>
@@ -174,12 +164,12 @@
 
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-lg-8 col-xl-7">
+        <div class="col-lg-10 col-xl-9">
             <div class="card main-card">
                 <div class="card-header">
-                    <h3 class="mb-0 header-title">TÍNH ĐIỂM XÉT TUYỂN</h3>
+                    <h3 class="mb-0 header-title">TÍNH ĐIỂM XÉT TUYỂN TOÀN DIỆN</h3>
                     <p class="mb-0 mt-2" style="color: rgba(255,255,255,0.9); font-size: 1.05rem;">
-                        THPT, V-SAT, ĐGNL với hệ số theo mã ngành và tổ hợp
+                        Nhập điểm các môn bạn có, hệ thống sẽ tự động quét và tính tất cả tổ hợp
                     </p>
                 </div>
                 <div class="card-body p-4 p-md-5">
@@ -190,48 +180,63 @@
 
                     <form action="/tinh-diem" method="post" id="formTinhDiem">
 
-                        <div class="mb-4">
-                            <label class="form-label fw-bold" style="color: var(--brand-1);">Phương Thức Xét Tuyển</label>
-                            <select class="form-select" name="phuongThuc" id="phuongThuc" required>
-                                <option value="THPT" ${phuongThucNhap == 'THPT' ? 'selected' : ''}>Xét tuyển điểm THPT</option>
-                                <option value="VSAT" ${phuongThucNhap == 'VSAT' ? 'selected' : ''}>Xét tuyển điểm V-SAT</option>
-                                <option value="DGNL" ${phuongThucNhap == 'DGNL' ? 'selected' : ''}>Xét tuyển điểm ĐGNL</option>
-                            </select>
-                        </div>
-                        
                         <div class="row mb-4">
                             <div class="col-md-6 mb-3 mb-md-0">
-                                <label class="form-label fw-bold" style="color: var(--brand-1);">Mã Ngành Xét Tuyển</label>
-                                <input type="text" class="form-control" name="maNganh" 
-                                       value="${maNganhNhap}" placeholder="VD: 7480201" required>
+                                <label class="form-label fw-bold" style="color: var(--brand-1);">Phương Thức</label>
+                                <select class="form-select" name="phuongThuc" id="phuongThuc" required>
+                                    <option value="THPT" ${phuongThucNhap == 'THPT' ? 'selected' : ''}>Xét tuyển THPT</option>
+                                    <option value="VSAT" ${phuongThucNhap == 'VSAT' ? 'selected' : ''}>Xét tuyển V-SAT</option>
+                                    <option value="DGNL" ${phuongThucNhap == 'DGNL' ? 'selected' : ''}>Xét tuyển ĐGNL</option>
+                                </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold" style="color: var(--brand-1);">Tổ Hợp Môn</label>
-                                <input type="text" class="form-control" name="maToHop"
-                                       id="maToHop" value="${maToHopNhap}" placeholder="Ví dụ: A00, C01, D07" required>
-                                <div class="note mt-2">Hệ thống tự động viết hoa (A00, b00 &rarr; B00)</div>
+                                <label class="form-label fw-bold" style="color: var(--brand-1);">Mã Ngành Xét Tuyển</label>
+                                <input type="text" class="form-control" name="maNganh" value="${maNganhNhap}" placeholder="VD: 7480201" required>
                             </div>
                         </div>
 
-                        <div class="row mb-3" id="nhomDiem3Mon">
-                            <div class="col-md-4 mb-3 mb-md-0">
-                                <label class="form-label fw-bold text-dark" id="labelMon1">Điểm Môn 1</label>
-                                    <input type="number" step="0.01" class="form-control" name="diemMon1" 
-                                       value="${diem1Nhap}" id="diemMon1">
+                        <div class="row mb-4" id="nhomDiem8Mon">
+                            <!-- <div class="col-12 mb-2">
+                                <div class="note px-3 py-2" style="background: #f0fdf4; border-radius: 8px;">
+                                    <strong>Mẹo:</strong> Bạn không cần nhập mã tổ hợp nữa. Chỉ cần nhập điểm các môn bạn đã thi, hệ thống sẽ đối chiếu và liệt kê kết quả của tất cả các tổ hợp hợp lệ.
+                                </div>
+                            </div> -->
+                            
+                            <div class="col-md-3 col-6 mb-3">
+                                <label class="form-label fw-bold text-dark">Toán</label>
+                                <input type="number" step="0.01" class="form-control input-mon" name="diemToan" value="${dToan}">
                             </div>
-                            <div class="col-md-4 mb-3 mb-md-0">
-                                <label class="form-label fw-bold text-dark" id="labelMon2">Điểm Môn 2</label>
-                                    <input type="number" step="0.01" class="form-control" name="diemMon2" 
-                                       value="${diem2Nhap}" id="diemMon2">
+                            <div class="col-md-3 col-6 mb-3">
+                                <label class="form-label fw-bold text-dark">Ngữ Văn</label>
+                                <input type="number" step="0.01" class="form-control input-mon" name="diemVan" value="${dVan}">
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold text-dark" id="labelMon3">Điểm Môn 3</label>
-                                    <input type="number" step="0.01" class="form-control" name="diemMon3" 
-                                       value="${diem3Nhap}" id="diemMon3">
+                            <div class="col-md-3 col-6 mb-3">
+                                <label class="form-label fw-bold text-dark">Tiếng Anh</label>
+                                <input type="number" step="0.01" class="form-control input-mon" name="diemAnh" value="${dAnh}">
+                            </div>
+                            <div class="col-md-3 col-6 mb-3">
+                                <label class="form-label fw-bold text-dark">Vật Lý</label>
+                                <input type="number" step="0.01" class="form-control input-mon" name="diemLy" value="${dLy}">
+                            </div>
+                            <div class="col-md-3 col-6 mb-3">
+                                <label class="form-label fw-bold text-dark">Hóa Học</label>
+                                <input type="number" step="0.01" class="form-control input-mon" name="diemHoa" value="${dHoa}">
+                            </div>
+                            <div class="col-md-3 col-6 mb-3">
+                                <label class="form-label fw-bold text-dark">Sinh Học</label>
+                                <input type="number" step="0.01" class="form-control input-mon" name="diemSinh" value="${dSinh}">
+                            </div>
+                            <div class="col-md-3 col-6 mb-3">
+                                <label class="form-label fw-bold text-dark">Lịch Sử</label>
+                                <input type="number" step="0.01" class="form-control input-mon" name="diemSu" value="${dSu}">
+                            </div>
+                            <div class="col-md-3 col-6 mb-3">
+                                <label class="form-label fw-bold text-dark">Địa Lý</label>
+                                <input type="number" step="0.01" class="form-control input-mon" name="diemDia" value="${dDia}">
                             </div>
                         </div>
 
-                        <div class="mb-3" id="nhomDiemDGNL" style="display: none;">
+                        <div class="mb-4" id="nhomDiemDGNL" style="display: none;">
                             <label class="form-label fw-bold text-dark">Điểm ĐGNL (Thang điểm bài thi)</label>
                             <input type="number" step="0.01" class="form-control" name="diemDGNL"
                                    value="${diemDGNLNhap}" id="diemDGNL" placeholder="Ví dụ: 850">
@@ -240,8 +245,7 @@
                         <div class="row mb-3">
                             <div class="col-md-4 mb-3 mb-md-0">
                                 <label class="form-label fw-bold text-dark">Điểm cộng (ĐC)</label>
-                                <input type="number" step="0.01" min="0" class="form-control" name="diemCong"
-                                       value="${diemCongNhap}" placeholder="Ví dụ: 1.5">
+                                <input type="number" step="0.01" min="0" class="form-control" name="diemCong" value="${diemCongNhap}" placeholder="Ví dụ: 1.5">
                             </div>
                             <div class="col-md-4 mb-3 mb-md-0">
                                 <label class="form-label fw-bold text-dark">Khu vực ưu tiên</label>
@@ -267,130 +271,180 @@
                             </div>
                         </div>
 
-                        <div class="d-grid gap-2 mt-5">
-                            <button type="submit" class="btn btn-primary btn-lg">Tính Toán & Quy Đổi Ngay</button>
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">Quét Tổ Hợp & Tính Điểm Ngay</button>
                         </div>
                     </form>
 
                     <c:if test="${not empty tongDiem}">
-                        <div class="result-box mt-4">
-                            <h5 class="border-bottom pb-3 mb-3 fw-bold" style="color: var(--brand-1); font-size: 1.4rem;">Kết Quả Quy Đổi Sang Thang Điểm THPT</h5>
-                            
-                            <c:if test="${kieuKetQua == 'MON'}">
-                                <table class="table table-borderless table-sm align-middle" style="font-size: 1.05rem;">
-                                    <tbody>
-                                        <tr>
-                                            <td class="py-2">Môn <strong><span>${tenMon1}</span></strong> <span class="text-muted">(Hệ số <span>${hs1}</span>)</span></td>
-                                            <td class="text-end py-2"><strong class="text-success fs-5">${diemQuyDoi1}</strong> điểm quy đổi</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="py-2">Môn <strong><span>${tenMon2}</span></strong> <span class="text-muted">(Hệ số <span>${hs2}</span>)</span></td>
-                                            <td class="text-end py-2"><strong class="text-success fs-5">${diemQuyDoi2}</strong> điểm quy đổi</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="py-2">Môn <strong><span>${tenMon3}</span></strong> <span class="text-muted">(Hệ số <span>${hs3}</span>)</span></td>
-                                            <td class="text-end py-2"><strong class="text-success fs-5">${diemQuyDoi3}</strong> điểm quy đổi</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-
-                                <div class="mt-4">
-                                    <h6 class="fw-bold mb-3" style="color: var(--brand-1);">Chi tiết từng môn và công thức áp dụng</h6>
+                        
+<c:if test="${kieuKetQua == 'DGNL'}">
+                            <div class="result-box mt-4">
+                                <h5 class="border-bottom pb-3 mb-3 fw-bold" style="color: var(--brand-1);">Kết Quả Quy Đổi ĐGNL</h5>
+                                
+                                <div class="alert alert-secondary mt-3 rounded-3 border-0" role="alert" style="font-size: 1.05rem;">
+                                    Ngành này xét ĐGNL theo tổ hợp gốc: <strong>${toHopGocHienThi}</strong> <br>
+                                    <small>Điểm đã được nội suy tuyến tính theo bảng xt_bangquydoi (phương thức ĐGNL HCM).</small>
+                                </div>
+                                <div class="formula-card">
+                                    <div class="formula-title">Chi tiết công thức ĐGNL</div>
+                                    <div>Điểm đầu vào: <strong>${diemDGNLNhapLamTron}</strong></div>
+                                    <div>Cách xử lý: <strong>${chiTietDGNL.cachTinh}</strong></div>
+                                    <div>Mốc quy đổi: <strong>${chiTietDGNL.mocQuyDoi}</strong></div>
+                                    <div class="mt-2">Công thức tổng quát:</div>
+                                    <span class="formula-code">${chiTietDGNL.congThucTongQuat}</span>
+                                    <div>Thay số:</div>
+                                    <span class="formula-code">${chiTietDGNL.congThucThaySo}</span>
+                                    <div class="text-muted">Ghi chú: <span>${chiTietDGNL.ghiChu}</span></div>
+                                </div>
+                                <div class="formula-card mt-3">
+                                    <div class="formula-title">Điểm cộng và ưu tiên</div>
+                                    <div>Điểm nền xét tuyển: <strong>${diemNenXetTuyen}</strong></div>
+                                    <div>Điểm ưu tiên gốc: <strong>${diemUuTienGoc}</strong></div>
+                                    <span class="formula-code">${congThucDiemUuTien}</span>
+                                    <div>Điểm ưu tiên áp dụng: <strong>${diemUuTienSauDieuChinh}</strong></div>
                                     
-                                    <c:forEach var="chiTietMon" items="${chiTietMonList}" varStatus="stat">
-                                        <div class="formula-card mb-3">
-                                            <div class="formula-title">Bước ${stat.count} - Môn ${chiTietMon.tenMon} (hệ số ${chiTietMon.heSo})</div>
-                                            <div>Điểm đầu vào: <strong>${chiTietMon.diemNhap}</strong></div>
-                                            <div>Cách xử lý: <strong>${chiTietMon.cachTinh}</strong></div>
-                                            <div>Mốc quy đổi: <strong>${chiTietMon.mocQuyDoi}</strong></div>
-                                            <div class="mt-2">Công thức tổng quát:</div>
-                                            <span class="formula-code">${chiTietMon.congThucTongQuat}</span>
-                                            <div>Thay số:</div>
-                                            <span class="formula-code">${chiTietMon.congThucThaySo}</span>
-                                            <div class="text-muted">Ghi chú: <span>${chiTietMon.ghiChu}</span></div>
-                                            <div class="mt-2">Điểm sau nhân hệ số: <strong>${chiTietMon.diemNhanHeSo}</strong></div>
+                                    <hr class="my-3" style="border-top: 1px dashed #cbd5e1;">
+                                    <div class="formula-title" style="color: #0284c7;">Công thức tính tổng điểm:</div>
+                                    <span class="formula-code" style="background: #f0f9ff; border: 1px solid #bae6fd; font-weight: 600; color: #0369a1;">
+                                        ${diemNenXetTuyen} (Nền) + ${diemCong} (ĐC) + ${diemUuTienSauDieuChinh} (Ưu tiên) = ${tongDiemXetTuyen}
+                                    </span>
+                                </div>
+                                <div class="alert mt-4 mb-0 rounded-4 border-0" style="background: rgba(14, 165, 233, 0.1);" role="alert">
+                                    <h4 class="alert-heading mb-0 text-center d-flex align-items-center justify-content-center flex-wrap gap-2">
+                                        <span style="color: var(--ink); font-size: 1.3rem;">TỔNG ĐIỂM ĐGNL:</span>
+                                        <strong class="text-danger" style="font-size: 2.2rem;">${tongDiem}</strong>
+                                    </h4>
+                                </div>
+                            </div>
+                        </c:if>
+
+                        <c:if test="${kieuKetQua == 'MON' && not empty ketQuaTatCaToHop}">
+                            <div class="result-box mt-5 p-4">
+                                <h5 class="fw-bold mb-3" style="color: var(--brand-1);">Hệ thống quét được ${ketQuaTatCaToHop.size()} tổ hợp hợp lệ:</h5>
+                                
+                                <ul class="nav nav-pills mb-4 gap-2" id="pills-tab" role="tablist">
+                                    <c:forEach var="kq" items="${ketQuaTatCaToHop}" varStatus="status">
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link ${status.first ? 'active' : ''} fw-bold" 
+                                                    id="tab-btn-${kq.maToHop}" data-bs-toggle="pill" 
+                                                    data-bs-target="#tab-content-${kq.maToHop}" type="button" role="tab">
+                                                Tổ hợp ${kq.maToHop} <br>
+                                                <span style="font-size: 0.9em; opacity: 0.9;">(${kq.tongDiemXetTuyen} đ)</span>
+                                                <c:if test="${status.first}"><div style="font-size: 0.7em; margin-top:2px;">⭐ CAO NHẤT</div></c:if>
+                                            </button>
+                                        </li>
+                                    </c:forEach>
+                                </ul>
+
+                                <div class="tab-content" id="pills-tabContent">
+                                    <c:forEach var="kq" items="${ketQuaTatCaToHop}" varStatus="status">
+                                        <div class="tab-pane fade ${status.first ? 'show active' : ''}" id="tab-content-${kq.maToHop}" role="tabpanel">
+                                            
+                                            <table class="table table-borderless table-sm align-middle mt-3">
+                                                <tbody>
+                                                    <tr>
+                                                        <td class="py-2">Môn <strong><span>${kq.tenMon1}</span></strong> <span class="text-muted">(Hệ số <span>${kq.hs1}</span>)</span></td>
+                                                        <td class="text-end py-2"><strong class="text-success fs-5">${kq.diemQuyDoi1}</strong> điểm</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="py-2">Môn <strong><span>${kq.tenMon2}</span></strong> <span class="text-muted">(Hệ số <span>${kq.hs2}</span>)</span></td>
+                                                        <td class="text-end py-2"><strong class="text-success fs-5">${kq.diemQuyDoi2}</strong> điểm</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="py-2">Môn <strong><span>${kq.tenMon3}</span></strong> <span class="text-muted">(Hệ số <span>${kq.hs3}</span>)</span></td>
+                                                        <td class="text-end py-2"><strong class="text-success fs-5">${kq.diemQuyDoi3}</strong> điểm</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+
+                                            <div class="mt-4">
+                                                <h6 class="fw-bold mb-3" style="color: var(--brand-1);">Chi tiết tính toán (${kq.maToHop})</h6>
+                                                
+<c:forEach var="chiTietMon" items="${kq.chiTietMonList}" varStatus="stat">
+    <div class="formula-card mb-3">
+        <div class="formula-title" style="font-size: 1.1rem;">Bước ${stat.count} - Môn ${chiTietMon.tenMon}</div>
+        
+        <c:choose>
+            <c:when test="${phuongThucNhap == 'THPT'}">
+                <div>Điểm đầu vào (thang 10): <strong>${chiTietMon.diemNhap}</strong></div>
+                <div class="text-muted mt-1" style="font-size: 0.95rem;">
+                    <span style="color: var(--brand-1);">✔</span> Ghi chú: Sử dụng trực tiếp điểm đầu vào, không qua quy đổi.
+                </div>
+            </c:when>
+            
+            <c:otherwise>
+                <div>Điểm đầu vào: <strong>${chiTietMon.diemNhap}</strong></div>
+                <div>Cách xử lý: <strong>${chiTietMon.cachTinh}</strong></div>
+                <div>Mốc quy đổi: <strong>${chiTietMon.mocQuyDoi}</strong></div>
+                
+                <div class="mt-2">Công thức tổng quát:</div>
+                <span class="formula-code">${chiTietMon.congThucTongQuat}</span>
+                
+                <div>Thay số:</div>
+                <span class="formula-code">${chiTietMon.congThucThaySo}</span>
+                
+                <div class="text-muted" style="font-size: 0.95rem;">Ghi chú: <span>${chiTietMon.ghiChu}</span></div>
+            </c:otherwise>
+        </c:choose>
+        
+        <div class="mt-2 pt-2 border-top" style="color: var(--brand-1); font-weight: 600; font-size: 1.05rem;">
+            Điểm quy đổi sau khi nhân hệ số (${chiTietMon.heSo}): <strong class="text-danger">${chiTietMon.diemNhanHeSo}</strong>
+        </div>
+    </div>
+</c:forEach>
+
+                                                <div class="formula-card mb-3">
+                                                    <div class="formula-title">Bước 4 - Tính tổng điểm có hệ số</div>
+                                                    <span class="formula-code">${kq.congThucTongDiem}</span>
+                                                </div>
+
+                                                <div class="formula-card mb-3">
+                                                    <div class="formula-title">Bước 5 - Tính tổng hệ số</div>
+                                                    <span class="formula-code">${kq.congThucTongHeSo}</span>
+                                                </div>
+
+                                                <div class="formula-card mb-3">
+                                                    <div class="formula-title">Bước 6 - Quy về thang điểm 30</div>
+                                                    <span class="formula-code">${kq.congThucQuyVe30}</span>
+                                                </div>
+
+                                                <div class="formula-card mt-3">
+                                                    <div class="formula-title">Bước 7 - Điểm cộng và ưu tiên</div>
+                                                    <div>Điểm nền xét tuyển: <strong>${kq.diemNenXetTuyen}</strong></div>
+                                                    <div>Điểm cộng (ĐC): <strong>${diemCong}</strong></div>
+                                                    <div>Ưu tiên khu vực/đối tượng: <strong>${diemKhuVuc} / ${diemDoiTuong}</strong></div>
+                                                    <span class="formula-code mt-2">${kq.congThucDiemUuTien}</span>
+                                                    <div>Điểm ưu tiên áp dụng: <strong>${kq.diemUuTienSauDieuChinh}</strong></div>
+                                                    
+                                                    <hr class="my-3" style="border-top: 1px dashed #cbd5e1;">
+                                                    <div class="formula-title" style="color: #0284c7;">Công thức chốt hạ:</div>
+                                                    <span class="formula-code" style="background: #f0f9ff; border: 1px solid #bae6fd; font-weight: 600; color: #0369a1;">
+                                                        ${kq.diemNenXetTuyen} (Nền) + ${diemCong} (ĐC) + ${kq.diemUuTienSauDieuChinh} (Ưu tiên) = ${kq.tongDiemXetTuyen}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div class="alert mt-4 mb-0 rounded-4 border-0" style="background: rgba(14, 165, 233, 0.1);" role="alert">
+                                                <h4 class="alert-heading mb-0 text-center d-flex align-items-center justify-content-center flex-wrap gap-2">
+                                                    <span style="color: var(--ink); font-size: 1.3rem;">TỔNG ĐIỂM TỔ HỢP ${kq.maToHop}:</span>
+                                                    <strong class="text-danger" style="font-size: 2.2rem;">${kq.tongDiemXetTuyen}</strong>
+                                                </h4>
+                                            </div>
+
                                         </div>
                                     </c:forEach>
-
-                                    <div class="formula-card mb-3">
-                                        <div class="formula-title">Bước 4 - Tính tổng điểm có hệ số</div>
-                                        <span class="formula-code">${congThucTongDiem}</span>
-                                    </div>
-
-                                    <div class="formula-card mb-3">
-                                        <div class="formula-title">Bước 5 - Tính tổng hệ số</div>
-                                        <span class="formula-code">${congThucTongHeSo}</span>
-                                    </div>
-
-                                    <div class="formula-card">
-                                        <div class="formula-title">Bước 6 - Quy về thang điểm 30</div>
-                                        <span class="formula-code">${congThucQuyVe30}</span>
-                                    </div>
-
-                                    <div class="formula-card mt-3">
-                                        <div class="formula-title">Bước 7 - Điểm cộng và ưu tiên</div>
-                                        <div>Điểm nền xét tuyển: <strong>${diemNenXetTuyen}</strong></div>
-                                        <div>Điểm cộng (ĐC): <strong>${diemCong}</strong></div>
-                                        <div>Ưu tiên khu vực: <strong>${diemKhuVuc}</strong></div>
-                                        <div>Ưu tiên đối tượng: <strong>${diemDoiTuong}</strong></div>
-                                        <div>Điểm ưu tiên gốc: <strong>${diemUuTienGoc}</strong></div>
-                                        <span class="formula-code">${congThucDiemUuTien}</span>
-                                        <div>Điểm ưu tiên áp dụng: <strong>${diemUuTienSauDieuChinh}</strong></div>
-                                        
-                                        <hr class="my-3" style="border-top: 1px dashed #cbd5e1;">
-                                        <div class="formula-title" style="color: #0284c7;">Công thức tính tổng điểm:</div>
-                                        <span class="formula-code" style="background: #f0f9ff; border: 1px solid #bae6fd; font-weight: 600; color: #0369a1; font-size: 1.1rem;">
-                                            ${diemNenXetTuyen} (Điểm nền) + ${diemCong} (Điểm cộng) + ${diemUuTienSauDieuChinh} (Ưu tiên) = ${tongDiemXetTuyen}
-                                        </span>
-                                    </div>
                                 </div>
-                            </c:if>
-
-                            <c:if test="${kieuKetQua == 'DGNL'}">
-                                <div class="mt-4">
-                                    <div class="alert alert-secondary mt-3 rounded-3 border-0" role="alert" style="font-size: 1.05rem;">
-                                        Điểm ĐGNL đã được nội suy tuyến tính theo bảng xt_bangquydoi (phương thức ĐGNL HCM, theo tổ hợp).
-                                    </div>
-
-                                    <div class="formula-card">
-                                        <div class="formula-title">Chi tiết công thức ĐGNL</div>
-                                        <div>Điểm đầu vào: <strong>${diemDGNLNhapLamTron}</strong></div>
-                                        <div>Cách xử lý: <strong>${chiTietDGNL.cachTinh}</strong></div>
-                                        <div>Mốc quy đổi: <strong>${chiTietDGNL.mocQuyDoi}</strong></div>
-                                        <div class="mt-2">Công thức tổng quát:</div>
-                                        <span class="formula-code">${chiTietDGNL.congThucTongQuat}</span>
-                                        <div>Thay số:</div>
-                                        <span class="formula-code">${chiTietDGNL.congThucThaySo}</span>
-                                        <div class="text-muted">Ghi chú: <span>${chiTietDGNL.ghiChu}</span></div>
-                                    </div>
-
-                                    <div class="formula-card mt-3">
-                                        <div class="formula-title">Điểm cộng và ưu tiên</div>
-                                        <div>Điểm nền xét tuyển: <strong>${diemNenXetTuyen}</strong></div>
-                                        <div>Điểm cộng (ĐC): <strong>${diemCong}</strong></div>
-                                        <div>Ưu tiên khu vực: <strong>${diemKhuVuc}</strong></div>
-                                        <div>Ưu tiên đối tượng: <strong>${diemDoiTuong}</strong></div>
-                                        <div>Điểm ưu tiên gốc: <strong>${diemUuTienGoc}</strong></div>
-                                        <span class="formula-code">${congThucDiemUuTien}</span>
-                                        <div>Điểm ưu tiên áp dụng: <strong>${diemUuTienSauDieuChinh}</strong></div>
-                                    </div>
-                                </div>
-                            </c:if>
-                            
-                            <div class="alert mt-4 mb-0 rounded-4 border-0" style="background: rgba(14, 165, 233, 0.1);" role="alert">
-                                <h4 class="alert-heading mb-0 text-center d-flex align-items-center justify-content-center flex-wrap gap-2">
-                                    <span style="color: var(--ink); font-size: 1.3rem;">TỔNG ĐIỂM XÉT TUYỂN:</span>
-                                    <strong class="text-danger" style="font-size: 2.2rem;">${tongDiemXetTuyen}</strong>
-                                </h4>
                             </div>
-                        </div>
+                        </c:if>
+
                     </c:if>
 
                 </div>
             </div>
             
             <div class="footer-text">
-                Copy no right &copy; <span>Nhóm 12</span>
+                <span>Copy no right &copy; Nhóm 12</span>
             </div>
 
         </div>
@@ -399,83 +453,32 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    function chuanHoaToHop() {
-        const inputToHop = document.getElementById('maToHop');
-        if (!inputToHop) {
-            return;
-        }
-        inputToHop.value = (inputToHop.value || '').trim().toUpperCase();
-    }
-
     function capNhatFormTheoPhuongThuc() {
         const phuongThuc = document.getElementById('phuongThuc').value;
-        const nhomDiem3Mon = document.getElementById('nhomDiem3Mon');
+        const nhomDiem8Mon = document.getElementById('nhomDiem8Mon');
         const nhomDiemDGNL = document.getElementById('nhomDiemDGNL');
-        const diemMon1 = document.getElementById('diemMon1');
-        const diemMon2 = document.getElementById('diemMon2');
-        const diemMon3 = document.getElementById('diemMon3');
+        const inputsMon = document.querySelectorAll('.input-mon');
         const diemDGNL = document.getElementById('diemDGNL');
-        const labelMon1 = document.getElementById('labelMon1');
-        const labelMon2 = document.getElementById('labelMon2');
-        const labelMon3 = document.getElementById('labelMon3');
 
         if (phuongThuc === 'DGNL') {
-            nhomDiem3Mon.style.display = 'none';
+            nhomDiem8Mon.style.display = 'none';
             nhomDiemDGNL.style.display = 'block';
-            diemMon1.required = false;
-            diemMon2.required = false;
-            diemMon3.required = false;
+            inputsMon.forEach(input => input.required = false);
             diemDGNL.required = true;
             return;
         }
 
-        nhomDiem3Mon.style.display = 'flex';
+        nhomDiem8Mon.style.display = 'flex';
         nhomDiemDGNL.style.display = 'none';
-        diemMon1.required = true;
-        diemMon2.required = true;
-        diemMon3.required = true;
         diemDGNL.required = false;
 
-        if (phuongThuc === 'THPT') {
-            labelMon1.textContent = 'Điểm Môn 1 (THPT, thang 10)';
-            labelMon2.textContent = 'Điểm Môn 2 (THPT, thang 10)';
-            labelMon3.textContent = 'Điểm Môn 3 (THPT, thang 10)';
-            diemMon1.placeholder = 'Thang 10';
-            diemMon2.placeholder = 'Thang 10';
-            diemMon3.placeholder = 'Thang 10';
-        } else {
-            labelMon1.textContent = 'Điểm Môn 1 (V-SAT, thang 150)';
-            labelMon2.textContent = 'Điểm Môn 2 (V-SAT, thang 150)';
-            labelMon3.textContent = 'Điểm Môn 3 (V-SAT, thang 150)';
-            diemMon1.placeholder = 'Thang 150';
-            diemMon2.placeholder = 'Thang 150';
-            diemMon3.placeholder = 'Thang 150';
-        }
+        // Đổi placeholder tùy phương thức
+        const placeholderText = phuongThuc === 'THPT' ? 'Thang 10' : 'Thang 150';
+        inputsMon.forEach(input => input.placeholder = placeholderText);
     }
 
     document.getElementById('phuongThuc').addEventListener('change', capNhatFormTheoPhuongThuc);
-    document.getElementById('maToHop').addEventListener('blur', chuanHoaToHop);
-    document.getElementById('formTinhDiem').addEventListener('submit', chuanHoaToHop);
     capNhatFormTheoPhuongThuc();
-
-    // Bắt sự kiện khi người dùng nhập xong mã ngành và click chuột ra ngoài (blur)
-    document.querySelector('input[name="maNganh"]').addEventListener('blur', function() {
-        const maNganhNhapVao = this.value.trim();
-        const inputToHop = document.getElementById('maToHop');
-
-        if (maNganhNhapVao !== '') {
-            // Gọi API bằng Fetch
-            fetch('/api/lay-to-hop-goc?maNganh=' + maNganhNhapVao)
-                .then(response => response.text())
-                .then(toHopGoc => {
-                    // Nếu API tìm thấy và trả về tổ hợp gốc (ví dụ: A00)
-                    if (toHopGoc !== '') {
-                        inputToHop.value = toHopGoc;
-                    }
-                })
-                .catch(error => console.error('Lỗi khi lấy tổ hợp gốc:', error));
-        }
-    });
 </script>
 </body>
 </html>
