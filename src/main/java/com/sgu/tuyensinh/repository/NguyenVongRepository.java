@@ -1,12 +1,14 @@
 package com.sgu.tuyensinh.repository;
 
-import com.sgu.tuyensinh.model.NguyenVongXetTuyen;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import java.util.List;
+
+import com.sgu.tuyensinh.model.NguyenVongXetTuyen;
 
 @Repository
 public interface NguyenVongRepository extends JpaRepository<NguyenVongXetTuyen, Integer> {
     // Tự động gom toàn bộ nguyện vọng của thằng CCCD này, sắp xếp theo Thứ tự NV tăng dần (1, 2, 3...)
-    List<NguyenVongXetTuyen> findByNnCccdOrderByNvTtAsc(String nnCccd);
+    Page<NguyenVongXetTuyen> findByNnCccdOrderByNvTtAsc(String cccd, PageRequest pageRequest);
 }

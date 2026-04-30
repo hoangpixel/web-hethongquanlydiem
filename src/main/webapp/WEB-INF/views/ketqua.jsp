@@ -119,6 +119,7 @@
                             <th>Tổ Hợp</th>
                             <th>Điểm Xét Tuyển</th>
                             <th>Trạng Thái</th>
+                            <th>Chi Tiết</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -145,6 +146,9 @@
                                         </c:otherwise>
                                     </c:choose>
                                 </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary" style="font-size: 0.72rem; font-weight: 700;">Chi Tiết</button>
+                                </td>
                             </tr>
                         </c:forEach>
 
@@ -161,6 +165,19 @@
                         </c:if>
                     </tbody>
                 </table>
+
+                <div class="pagination">
+                    <c:if test="${currentPage > 0}">
+                        <a href="?page=${currentPage - 1}">Prev</a>
+                    </c:if>
+
+                    <span>Trang ${currentPage + 1}</span>
+
+                    <c:if test="${currentPage < totalPages - 1}">
+                        <a href="?page=${currentPage + 1}">Next</a>
+                    </c:if>
+                </div>
+
             </div>
         </div>
 

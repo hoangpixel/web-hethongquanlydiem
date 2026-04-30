@@ -1,13 +1,14 @@
 package com.sgu.tuyensinh.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+
 import com.sgu.tuyensinh.model.NguyenVongXetTuyen;
 import com.sgu.tuyensinh.model.ThiSinh;
 import com.sgu.tuyensinh.repository.NguyenVongRepository;
 import com.sgu.tuyensinh.repository.ThiSinhRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 public class TuyensinhService {
@@ -29,7 +30,7 @@ public class TuyensinhService {
     }
 
     // Hàm lấy danh sách Nguyện vọng
-    public List<NguyenVongXetTuyen> layDanhSachNguyenVong(String cccd) {
-        return nguyenVongRepository.findByNnCccdOrderByNvTtAsc(cccd);
+    public Page<NguyenVongXetTuyen> getNguyenVongByThiSinh(String cccd, int page, int size) {
+        return nguyenVongRepository.findByNnCccdOrderByNvTtAsc(cccd, PageRequest.of(page, size));
     }
 }

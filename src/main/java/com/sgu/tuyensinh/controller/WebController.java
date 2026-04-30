@@ -1,8 +1,7 @@
 package com.sgu.tuyensinh.controller;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -55,15 +54,15 @@ public class WebController {
 
     // 3. TRANG HIỂN THỊ BẢNG KẾT QUẢ NGUYỆN VỌNG
     @GetMapping("/ketqua")
-    public String hienThiTrangKetQua(HttpSession session, Model model) {
+    public String hienThiTrangKetQua(HttpSession session, Model model, @RequestParam(defaultValue = "0") int page) {
         // Kiểm tra xem đã đăng nhập chưa, chưa thì đuổi về trang login
         ThiSinh ts = (ThiSinh) session.getAttribute("thiSinhDangNhap");
         if (ts == null) {
             return "redirect:/login"; 
         }
-
+        int size = 10; // Số nguyện vọng hiển thị trên một trang
         // Lấy danh sách nguyện vọng từ DB
-        List<NguyenVongXetTuyen> danhSachNV = tuyensinhService.layDanhSachNguyenVong(ts.getCccd());
+        Page<NguyenVongXetTuyen> danhSachNV = tuyensinhService.getNguyenVongByThiSinh(ts.getCccd(), page, size);
 
         DiemThiSinh diemThiSinh = diemThiSinhRepository.findByCccd(ts.getCccd());
         model.addAttribute("diemThiSinh", diemThiSinh);
@@ -71,6 +70,10 @@ public class WebController {
         // Đóng gói đẩy ra file ketqua.jsp
         model.addAttribute("thiSinh", ts);
         model.addAttribute("danhSachNV", danhSachNV);
+        model.addAttribute("danhSachNV", danhSachNV.getContent());
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", danhSachNV.getTotalPages());
+
 
         return "ketqua"; // Trả về file ketqua.jsp
     }
