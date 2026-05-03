@@ -147,7 +147,21 @@
                                     </c:choose>
                                 </td>
                                 <td>
-                                    <button class="btn btn-sm btn-outline-primary" style="font-size: 0.72rem; font-weight: 700;">Chi Tiết</button>
+                                    <button class="btn btn-sm btn-outline-primary btn-chi-tiet"
+                                            data-nv-tt="${nv.nvTt}"
+                                            data-ma-nganh="${nv.nvMaNganh}"
+                                            data-phuong-thuc="${nv.ttPhuongThuc}"
+                                            data-to-hop="${nv.ttThm}"
+                                            data-to-hop-goc="${nv.toHopGoc}"
+                                            data-lech="${nv.mLechDiem}"
+                                            data-diem-thxt="${nv.diemThxt}"
+                                            data-diem-thgxt="${nv.diemThgxt}"
+                                            data-diem-cong="${nv.diemCong}"
+                                            data-diem-utqd="${nv.diemUtqd}"
+                                            data-diem-xt="${nv.diemXetTuyen}"
+                                            data-danh-sach-mon="${nv.danhSachMonJson}">
+                                        Chi Tiết
+                                    </button>
                                 </td>
                             </tr>
                         </c:forEach>
@@ -180,10 +194,235 @@
 
             </div>
         </div>
-
     </div>
+
+        <!-- MODAL CHI TIẾT TÍNH ĐIỂM -->
+    <div class="modal fade" id="chiTietDiemModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content" style="border-radius: 12px; border: none;">
+                <div class="modal-header" style="border-bottom: 1px solid #e5e7eb;">
+                    <div>
+                        <h5 class="modal-title fw-600" style="font-size: 1rem;">
+                            📊 Chi Tiết Tính Điểm Xét Tuyển
+                        </h5>
+                        <small id="modal-nv-info" class="text-muted"></small>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <!-- Meta badges -->
+                <div class="px-4 py-2 d-flex gap-2 flex-wrap"
+                    style="border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
+                    <span class="badge rounded-pill"
+                        style="background:#EFF6FF;color:#1d4ed8;font-weight:600;font-size:.75rem"
+                        id="badge-nganh"></span>
+                    <span class="badge rounded-pill"
+                        style="background:#F0FDF4;color:#15803d;font-weight:600;font-size:.75rem"
+                        id="badge-pt"></span>
+                    <span class="badge rounded-pill"
+                        style="background:#FFFBEB;color:#b45309;font-weight:600;font-size:.75rem"
+                        id="badge-th"></span>
+                </div>
+
+                <div class="modal-body p-4" id="modal-chitiet-body">
+                    <!-- Nội dung được render bằng JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    document.querySelectorAll('.btn-chi-tiet').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+
+            // ── 1. Lấy data từ attribute ──
+            var nvTt       = this.dataset.nvTt;
+            var maNganh    = this.dataset.maNganh;
+            var phuongThuc = this.dataset.phuongThuc;
+            var toHop      = this.dataset.toHop;
+            var toHopGoc   = this.dataset.toHopGoc;
+
+            // Điểm đã tính sẵn từ backend — dùng thẳng, không tính lại
+            var diemThxt  = parseFloat(this.dataset.diemThxt  || '0');
+            var diemThgxt = parseFloat(this.dataset.diemThgxt || '0');
+            var diemCong  = parseFloat(this.dataset.diemCong  || '0');
+            var diemUtqd  = parseFloat(this.dataset.diemUtqd  || '0');
+            var diemXt    = parseFloat(this.dataset.diemXt    || '0');
+            var lech      = parseFloat(this.dataset.lech      || '0');
+
+            // ── 2. Parse danh sách môn từ JSON ──
+            var rawJson = this.dataset.danhSachMon || '[]';
+            var monHoc  = [];
+            var isError = false;
+            var errorMsg = '';
+
+            try {
+                var parsed = JSON.parse(rawJson);
+                if (Array.isArray(parsed)) {
+                    monHoc = parsed;
+                } else if (parsed.error) {
+                    isError  = true;
+                    errorMsg = parsed.error;
+                }
+            } catch(e) {
+                isError  = true;
+                errorMsg = 'Dữ liệu tổ hợp không hợp lệ.';
+            }
+
+            // ── 3. Gán badges ──
+            document.getElementById('badge-nganh').textContent = 'Mã ngành: '    + maNganh;
+            document.getElementById('badge-pt').textContent    = 'Phương thức: ' + phuongThuc;
+            document.getElementById('badge-th').textContent    = 'Tổ hợp: '      + toHop;
+            document.getElementById('modal-nv-info').textContent =
+                'Nguyện vọng ' + nvTt + ' — Chi tiết từng bước tính điểm';
+
+            // ── 4. Render body modal ──
+            var body = '';
+            if (isError) {
+                body = '<div style="padding:20px;color:#dc2626;background:#fef2f2;border-radius:8px;border:1px solid #fca5a5">'
+                    + '⚠️ ' + errorMsg + '</div>';
+            } else {
+                var pt = phuongThuc ? phuongThuc.toUpperCase() : '';
+                // "XÉT THPT", "ĐÁNH GIÁ V-SAT", "ĐGNL HCM"
+                if (pt.indexOf('DGNL') >= 0 || pt.indexOf('ĐGNL') >= 0) {
+                    body = renderDGNL(diemThxt, diemCong, diemUtqd, diemXt);
+                } else if (pt.indexOf('V-SAT') >= 0 || pt.indexOf('VSAT') >= 0) {
+                    body = renderTHPT(toHop, toHopGoc, monHoc, lech, diemThxt, diemThgxt, diemCong, diemUtqd, diemXt, true);
+                } else {
+                    // Mặc định còn lại là THPT
+                    body = renderTHPT(toHop, toHopGoc, monHoc, lech, diemThxt, diemThgxt, diemCong, diemUtqd, diemXt, false);
+                }
+            }
+
+            document.getElementById('modal-chitiet-body').innerHTML = body;
+            new bootstrap.Modal(document.getElementById('chiTietDiemModal')).show();
+        });
+    });
+
+    /* ==================== RENDER THPT / V-SAT ==================== */
+    // Dùng thẳng điểm từ backend — không tính lại
+    function renderTHPT(toHop, toHopGoc, monHoc, lech, diemThxt, diemThgxt, diemCong, diemUtqd, diemXt, isVSAT) {
+
+        // Bước 1: lưới điểm môn
+        var scoreCells = monHoc.map(function(mon) {
+            return '<div class="ct-score-item">'
+                + '<div class="ct-score-name">' + mon.ten + '</div>'
+                + '<div class="ct-score-val">'  + mon.diem + '</div>'
+                + '<div class="ct-score-wt">Hệ số ' + mon.heSo + '</div>'
+                + '</div>';
+        }).join('');
+
+        // Bước 2: công thức ĐTHXT
+        var W = monHoc.reduce(function(s, m) { return s + m.heSo; }, 0);
+        var formulaParts = monHoc.map(function(m) {
+            return m.diem + '&times;' + m.heSo;
+        }).join(' + ');
+
+        // Bước 3: quy đổi tổ hợp gốc
+        var sameTH  = (Math.abs(lech) < 0.001);
+        var lechStr = '';
+        if (!sameTH) {
+            var sign = lech > 0 ? '-' : '+';
+            lechStr  = diemThxt.toFixed(2) + ' ' + sign + ' ' + Math.abs(lech).toFixed(2)
+                    + ' = ' + diemThgxt.toFixed(2);
+        }
+
+        // Bước 4: công thức ĐƯT
+        var sumThgxtCong = diemThgxt + diemCong;
+        var dutFormula = sumThgxtCong < 22.5
+            ? 'Vì ' + sumThgxtCong.toFixed(2) + ' &lt; 22,5 → Cộng ưu tiên bình thường'
+            : 'Vì ' + sumThgxtCong.toFixed(2) + ' &ge; 22,5 → [(30 &minus; ' + diemThgxt.toFixed(2) + ' &minus; ' + diemCong.toFixed(2) + ') / 7.5] &times; MĐƯT';
+
+        return ''
+        // Bước 1
+        + '<p class="ct-section-title">'
+        + (isVSAT ? 'Bước 1 — Điểm từng môn (đã quy về thang 10 theo bảng V-SAT)'
+                : 'Bước 1 — Điểm thi từng môn')
+        + '</p>'
+        + '<div class="ct-score-grid">' + scoreCells + '</div>'
+
+        // Bước 2
+        + '<div class="ct-step-card">'
+        + '<div class="ct-step-label">Bước 2 — Tính ĐTHXT (điểm tổ hợp xét tuyển)</div>'
+        + '<div class="ct-formula">(' + formulaParts + ') / ' + W + ' &times; 3</div>'
+        + '<div class="ct-result">ĐTHXT = <span class="val">' + diemThxt.toFixed(2) + '</span></div>'
+        + '</div>'
+
+        // Bước 3
+        + '<div class="ct-step-card">'
+        + '<div class="ct-step-label">Bước 3 — Quy đổi về tổ hợp gốc <strong>' + toHopGoc + '</strong>'
+        + (sameTH ? ' (cùng tổ hợp, không cần quy đổi)' : '') + '</div>'
+        + (!sameTH ? '<div class="ct-formula">ĐTHGXT = ' + lechStr + '</div>' : '')
+        + '<div class="ct-result">ĐTHGXT = <span class="val">' + diemThgxt.toFixed(2) + '</span></div>'
+        + (!sameTH
+            ? '<div class="ct-note">Mức chênh lệch tổ hợp <strong>' + toHop + '</strong> → <strong>'
+            + toHopGoc + '</strong>: <strong>' + (lech >= 0 ? '+' : '') + lech.toFixed(2)
+            + '</strong> điểm (theo bảng độ lệch THPT)</div>'
+            : '')
+        + '</div>'
+
+        // Bước 4
+        + '<hr style="border-color:#e5e7eb;margin:14px 0">'
+        + '<p class="ct-section-title">Bước 4 — Cộng điểm ưu tiên & điểm cộng</p>'
+        + '<div class="ct-step-card">'
+        + row('ĐTHGXT', diemThgxt.toFixed(2))
+        + row('Điểm cộng (ĐC)', '+' + diemCong.toFixed(2))
+        + row(dutFormula, '')
+        + row('Điểm ưu tiên (ĐƯT)', '+' + diemUtqd.toFixed(2))
+        + '</div>'
+
+        // Kết quả
+        + '<div class="ct-total-row">'
+        + '<span class="ct-total-label">Điểm xét tuyển (ĐXT)</span>'
+        + '<span class="ct-total-val">' + diemXt.toFixed(2) + '</span>'
+        + '</div>'
+        + '<div class="ct-note">ĐXT = ĐTHGXT + ĐC + ĐƯT = '
+        + diemThgxt.toFixed(2) + ' + ' + diemCong.toFixed(2) + ' + ' + diemUtqd.toFixed(2)
+        + ' = <strong>' + diemXt.toFixed(2) + '</strong> / 30 điểm</div>';
+    }
+
+    /* ==================== RENDER ĐGNL ==================== */
+    function renderDGNL(diemThxt, diemCong, diemUtqd, diemXt) {
+        var sumThgxtCong = diemThxt + diemCong;
+        var dutFormula = sumThgxtCong < 22.5
+            ? 'Vì ' + sumThgxtCong.toFixed(2) + ' &lt; 22,5 → Cộng ưu tiên bình thường'
+            : 'Vì ' + sumThgxtCong.toFixed(2) + ' &ge; 22,5 → [(30 &minus; ' + diemThxt.toFixed(2) + ' &minus; ' + diemCong.toFixed(2) + ') / 7.5] &times; MĐƯT';
+
+        return ''
+        + '<div class="ct-step-card">'
+        + '<div class="ct-step-label">Bước 1 — Điểm thi ĐGNL (đã quy đổi tương đương về thang 30)</div>'
+        + '<div class="ct-result">ĐTHXT = ĐTHGXT = <span class="val">' + diemThxt.toFixed(2) + '</span></div>'
+        + '<div class="ct-note" style="margin-top:8px">Với phương thức ĐGNL: ĐTHGXT = ĐTHXT — không cần quy đổi tổ hợp gốc</div>'
+        + '</div>'
+
+        + '<hr style="border-color:#e5e7eb;margin:14px 0">'
+        + '<p class="ct-section-title">Bước 2 — Cộng điểm ưu tiên & điểm cộng</p>'
+        + '<div class="ct-step-card">'
+        + row('ĐTHGXT', diemThxt.toFixed(2))
+        + row('Điểm cộng (ĐC)', '+' + diemCong.toFixed(2))
+        + row(dutFormula, '')
+        + row('Điểm ưu tiên (ĐƯT)', '+' + diemUtqd.toFixed(2))
+        + '</div>'
+
+        + '<div class="ct-total-row">'
+        + '<span class="ct-total-label">Điểm xét tuyển (ĐXT)</span>'
+        + '<span class="ct-total-val">' + diemXt.toFixed(2) + '</span>'
+        + '</div>'
+        + '<div class="ct-note">ĐXT = ĐTHGXT + ĐC + ĐƯT = '
+        + diemThxt.toFixed(2) + ' + ' + diemCong.toFixed(2) + ' + ' + diemUtqd.toFixed(2)
+        + ' = <strong>' + diemXt.toFixed(2) + '</strong> / 30 điểm</div>';
+    }
+
+    function row(label, val) {
+        return '<div class="ct-add-row">'
+            + '<span class="ct-add-label">' + label + '</span>'
+            + '<span class="ct-add-val">'   + val   + '</span>'
+            + '</div>';
+    }
+</script>
 </body>
 </html>
