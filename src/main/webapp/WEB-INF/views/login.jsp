@@ -10,7 +10,7 @@
             <link rel="preconnect" href="https://fonts.googleapis.com">
             <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
             <link
-                href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700&display=swap"
+                href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700&family=Oswald:wght@400;500;600;700&display=swap"
                 rel="stylesheet">
             <link rel="stylesheet" href="${pageContext.request.contextPath}/css/login.css" />
             <link rel="icon" href="${pageContext.request.contextPath}/img/logo.png" type="image/png">
@@ -23,7 +23,7 @@
                         <div class="logo-wrapper">
                             <img src="${pageContext.request.contextPath}/img/logo.png" alt="SGU Logo" class="brand-logo">
                         </div>
-                        <h1 class="brand-title">Hệ thống Quản lý Điểm</h1>
+                        <h1 class="brand-title text-white">Hệ thống Quản lý Điểm</h1>
                         <p class="brand-tagline">Tiên phong công nghệ trong giáo dục</p>
                     </div>
                 </div>
@@ -58,10 +58,25 @@
                             </div>
 
                             <div class="input-group">
-                                <label class="label" for="password">Mật khẩu</label>
+                                <label class="label" for="ngaySinh">Ngày sinh</label>
                                 <div class="input-wrapper">
-                                    <input class="input" type="password" id="password" name="password"
-                                        placeholder="••••••••" required />
+                                    <input class="input" type="text" id="ngaySinh" name="ngaySinh"
+                                        placeholder="dd/mm/yyyy hoặc yyyy-mm-dd" required />
+                                </div>
+                            </div>
+
+                            <div class="input-group">
+                                <label class="label" for="captchaInput">Xác minh CAPTCHA</label>
+                                <div class="captcha">
+                                    <img class="captcha__image" id="captchaImage"
+                                        src="${pageContext.request.contextPath}/captcha.png" alt="CAPTCHA" />
+                                    <button class="captcha__refresh" type="button" id="captchaRefresh">
+                                        Đổi mã
+                                    </button>
+                                </div>
+                                <div class="input-wrapper">
+                                    <input class="input" type="text" id="captchaInput" name="captcha"
+                                        placeholder="Nhập mã CAPTCHA" required />
                                 </div>
                             </div>
 
@@ -73,19 +88,27 @@
                                 </label>
                             </div>
 
-                            <button class="btn" type="submit">
+                            <button class="btn" type="submit" id="loginBtn">
                                 <span class="btn-text">Đăng nhập</span>
-                                <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18"
-                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="5" y1="12" x2="19" y2="12" />
-                                    <polyline points="12 5 19 12 12 19" />
-                                </svg>
                             </button>
                         </form>
                     </div>
                 </div>
             </div>
+            <script>
+                (function () {
+                    var img = document.getElementById("captchaImage");
+                    var refresh = document.getElementById("captchaRefresh");
+                    if (!img || !refresh) return;
+
+                    var reload = function () {
+                        img.src = "${pageContext.request.contextPath}/captcha.png?t=" + Date.now();
+                    };
+
+                    refresh.addEventListener("click", reload);
+                    img.addEventListener("click", reload);
+                })();
+            </script>
         </body>
 
         </html>

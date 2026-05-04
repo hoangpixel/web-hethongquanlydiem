@@ -5,6 +5,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+
 import com.sgu.tuyensinh.model.NguyenVongXetTuyen;
 import com.sgu.tuyensinh.model.ThiSinh;
 import com.sgu.tuyensinh.repository.NguyenVongRepository;
@@ -20,13 +24,28 @@ public class TuyensinhService {
     private NguyenVongRepository nguyenVongRepository;
 
     // Hàm kiểm tra Đăng nhập
-    public ThiSinh kiemTraDangNhap(String cccd, String matKhau) {
+    public ThiSinh kiemTraDangNhap(String cccd, String ngaySinh) {
         ThiSinh ts = thiSinhRepository.findByCccd(cccd);
-        // Nếu tìm thấy thí sinh VÀ mật khẩu khớp nhau
-        if (ts != null && ts.getPassword().equals(matKhau)) {
-            return ts; // Đăng nhập thành công
+        if (ts != null && ts.getNgaySinh() != null && ngaySinh != null) {
+            try {
+                LocalDate inputDate = parseNgaySinh(ngaySinh.trim());
+                LocalDate storedDate = ts.getNgaySinh().toLocalDate();
+                if (inputDate != null && storedDate.equals(inputDate)) {
+                    return ts; // Đăng nhập thành công
+                }
+            } catch (DateTimeParseException ex) {
+                return null;
+            }
         }
         return null; // Sai thông tin
+    }
+
+    private LocalDate parseNgaySinh(String raw) {
+        try {
+            return LocalDate.parse(raw, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        } catch (DateTimeParseException ex) {
+            return LocalDate.parse(raw, DateTimeFormatter.ISO_LOCAL_DATE);
+        }
     }
 
     // Hàm lấy danh sách Nguyện vọng

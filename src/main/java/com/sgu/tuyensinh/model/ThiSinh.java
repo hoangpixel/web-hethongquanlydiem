@@ -7,6 +7,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "xt_thisinhxettuyen25")
 public class ThiSinh {
@@ -36,6 +38,9 @@ public class ThiSinh {
 
     @Column(name = "dienThoai", length = 20)
     private String sdt;
+
+    @Column(name = "ngaySinh")
+    private LocalDateTime ngaySinh;
 
     // --- HÀM KHỞI TẠO RỖNG ---
     public ThiSinh() {}
@@ -72,4 +77,7 @@ public class ThiSinh {
 
     public String getSdt() { return sdt; }
     public void setSdt(String sdt) { this.sdt = sdt; }
+
+    public LocalDateTime getNgaySinh() { return ngaySinh; }
+    public void setNgaySinh(LocalDateTime ngaySinh) { this.ngaySinh = ngaySinh; }
 }

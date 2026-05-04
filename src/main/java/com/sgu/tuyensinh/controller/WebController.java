@@ -1,11 +1,21 @@
 package com.sgu.tuyensinh.controller;
 
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -24,6 +34,7 @@ import com.sgu.tuyensinh.repository.ToHopMonThiRepository;
 import com.sgu.tuyensinh.service.TuyensinhService;
 
 import jakarta.servlet.http.HttpSession;
+import javax.imageio.ImageIO;
 
 @Controller
 public class WebController {
@@ -46,15 +57,37 @@ public class WebController {
         return "login"; // Trả về file login.jsp
     }
 
+    @GetMapping("/captcha.png")
+    public ResponseEntity<byte[]> taoCaptcha(HttpSession session) {
+        String captchaText = taoMaCaptcha(5);
+        session.setAttribute("captcha", captchaText);
+
+        BufferedImage image = veCaptcha(captchaText);
+        byte[] bytes = ghiAnhPng(image);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, "no-store, no-cache, must-revalidate, max-age=0")
+                .header(HttpHeaders.PRAGMA, "no-cache")
+                .contentType(MediaType.IMAGE_PNG)
+                .body(bytes);
+    }
+
     // 2. KHI BẤM NÚT "TRA CỨU KẾT QUẢ" TRÊN FORM
     @PostMapping("/check-login")
     public String xuLyDangNhap(@RequestParam("cccd") String cccd, 
-                               @RequestParam("password") String password, 
+                               @RequestParam("ngaySinh") String ngaySinh,
+                               @RequestParam("captcha") String captcha,
                                HttpSession session, 
                                Model model) {
-        
+        String captchaSession = (String) session.getAttribute("captcha");
+        if (captchaSession == null || captcha == null
+                || !captchaSession.equalsIgnoreCase(captcha.trim())) {
+            model.addAttribute("error", "Sai CAPTCHA. Vui lòng thử lại!");
+            return "login";
+        }
+
         // Nhờ Bếp trưởng kiểm tra
-        ThiSinh ts = tuyensinhService.kiemTraDangNhap(cccd, password);
+        ThiSinh ts = tuyensinhService.kiemTraDangNhap(cccd, ngaySinh);
         
         if (ts != null) {
             // Lưu thông tin thí sinh vào Session (phiên làm việc) để nhớ là đã đăng nhập
@@ -62,7 +95,7 @@ public class WebController {
             return "redirect:/ketqua"; // Chuyển hướng sang trang Kết quả
         } else {
             // Báo lỗi nếu sai CCCD hoặc Mật khẩu
-            model.addAttribute("error", "Sai số CCCD hoặc mật khẩu. Vui lòng thử lại!");
+            model.addAttribute("error", "Sai số CCCD hoặc ngày sinh. Vui lòng thử lại!");
             return "login"; // Ở lại trang login.jsp và hiện lỗi
         }
     }
@@ -98,6 +131,59 @@ public String hienThiTrangKetQua(HttpSession session, Model model,
     public String xuLyDangXuat(HttpSession session) {
         session.invalidate(); // Xóa sạch trí nhớ
         return "redirect:/login"; // Đuổi về trang chủ
+    }
+
+    private String taoMaCaptcha(int length) {
+        String chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        SecureRandom random = new SecureRandom();
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
+    }
+
+    private BufferedImage veCaptcha(String text) {
+        int width = 180;
+        int height = 56;
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = image.createGraphics();
+
+        g.setColor(new Color(245, 247, 250));
+        g.fillRect(0, 0, width, height);
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        SecureRandom random = new SecureRandom();
+        for (int i = 0; i < 8; i++) {
+            g.setColor(new Color(180 + random.nextInt(60), 180 + random.nextInt(60), 180 + random.nextInt(60)));
+            int x1 = random.nextInt(width);
+            int y1 = random.nextInt(height);
+            int x2 = random.nextInt(width);
+            int y2 = random.nextInt(height);
+            g.drawLine(x1, y1, x2, y2);
+        }
+
+        g.setFont(new Font("Arial", Font.BOLD, 32));
+        g.setColor(new Color(40, 55, 71));
+        int x = 18;
+        for (char c : text.toCharArray()) {
+            int y = 38 + random.nextInt(6);
+            g.drawString(String.valueOf(c), x, y);
+            x += 28 + random.nextInt(4);
+        }
+
+        g.dispose();
+        return image;
+    }
+
+    private byte[] ghiAnhPng(BufferedImage image) {
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(image, "png", baos);
+            return baos.toByteArray();
+        } catch (Exception ex) {
+            return new byte[0];
+        }
     }
 
 // ══════════════════════════════════════════════
