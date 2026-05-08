@@ -84,6 +84,14 @@
                     <div class="ts-label">Số Điện Thoại</div>
                     <div class="ts-value">${thiSinh.sdt}</div>
                 </div>
+                <div class="ts-item">
+                    <div class="ts-label">Đối Tượng</div>
+                    <div class="ts-value">${thiSinh.doiTuong}</div>
+                </div>
+                <div class="ts-item">
+                    <div class="ts-label">Khu Vực</div>
+                    <div class="ts-value">${thiSinh.khuVuc}</div>
+                </div>
             </div>
            <!-- ĐIỂM THI -->
             <div class="score-section mt-4">
@@ -159,7 +167,12 @@
                                             data-diem-cong="${nv.diemCong}"
                                             data-diem-utqd="${nv.diemUtqd}"
                                             data-diem-xt="${nv.diemXetTuyen}"
-                                            data-danh-sach-mon="${nv.danhSachMonJson}">
+                                            data-danh-sach-mon="${nv.danhSachMonJson}"
+                                            data-diem-dau-vao="${nv.diemDauVao}"
+                                            data-moc-quy-doi="${nv.mocQuyDoi}"
+                                            data-cong-thuc-tong-quat="${nv.congThucTongQuat}"
+                                            data-cong-thuc-thay-so="${nv.congThucThaySo}"
+                                            data-ghi-chu="${nv.ghiChu}">
                                         Chi Tiết
                                     </button>
                                 </td>
@@ -253,24 +266,38 @@
             var diemUtqd  = parseFloat(this.dataset.diemUtqd  || '0');
             var diemXt    = parseFloat(this.dataset.diemXt    || '0');
             var lech      = parseFloat(this.dataset.lech      || '0');
+            var diemDauVao      = this.dataset.diemDauVao      || '';
+            var mocQuyDoi       = this.dataset.mocQuyDoi       || '';
+            var congThucTongQuat= this.dataset.congThucTongQuat || '';
+            var congThucThaySo  = this.dataset.congThucThaySo  || '';
+            var ghiChu          = this.dataset.ghiChu          || '';
 
             // ── 2. Parse danh sách môn từ JSON ──
-            var rawJson = this.dataset.danhSachMon || '[]';
+            var rawB64  = this.dataset.danhSachMon || '';
             var monHoc  = [];
             var isError = false;
             var errorMsg = '';
 
             try {
-                var parsed = JSON.parse(rawJson);
+                var jsonStr = '[]';
+                if (rawB64) {
+                    try {
+                        jsonStr = decodeURIComponent(escape(atob(rawB64)));
+                    } catch(e64) {
+                        jsonStr = rawB64;
+                    }
+                }
+
+                var parsed = JSON.parse(jsonStr);
                 if (Array.isArray(parsed)) {
                     monHoc = parsed;
-                } else if (parsed.error) {
+                } else if (parsed && parsed.error) {
                     isError  = true;
                     errorMsg = parsed.error;
                 }
             } catch(e) {
                 isError  = true;
-                errorMsg = 'Dữ liệu tổ hợp không hợp lệ.';
+                errorMsg = 'Không tìm thấy dữ liệu tổ hợp cho nguyện vọng này.';
             }
 
             // ── 3. Gán badges ──
@@ -289,7 +316,8 @@
                 var pt = phuongThuc ? phuongThuc.toUpperCase() : '';
                 // "XÉT THPT", "ĐÁNH GIÁ V-SAT", "ĐGNL HCM"
                 if (pt.indexOf('DGNL') >= 0 || pt.indexOf('ĐGNL') >= 0) {
-                    body = renderDGNL(diemThxt, diemCong, diemUtqd, diemXt);
+                    body = renderDGNL(diemThxt, diemCong, diemUtqd, diemXt,
+                                    diemDauVao, mocQuyDoi, congThucTongQuat, congThucThaySo, ghiChu);
                 } else if (pt.indexOf('V-SAT') >= 0 || pt.indexOf('VSAT') >= 0) {
                     body = renderTHPT(toHop, toHopGoc, monHoc, lech, diemThxt, diemThgxt, diemCong, diemUtqd, diemXt, true);
                 } else {
@@ -321,6 +349,36 @@
         var formulaParts = monHoc.map(function(m) {
             return m.diem + '&times;' + m.heSo;
         }).join(' + ');
+        
+        // Block chi tiết nội suy V-SAT (chỉ hiện nếu có data)
+        var noiSuyVSAT = '';
+        if (isVSAT) {
+            var noiSuyRows = monHoc.map(function(mon) {
+                var coChiTiet = mon.mocQuyDoi && mon.congThucThaySo;
+                return '<div style="border:1px solid #e0f2fe;border-radius:8px;padding:10px 12px;margin-bottom:8px;background:#f0f9ff">'
+                    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+                    + '<span style="font-weight:700;color:#0369a1;font-size:0.82rem">📌 Môn: ' + mon.ten + '</span>'
+                    + '<span style="font-size:0.78rem;color:#6b7280">Điểm thô V-SAT: <strong style="color:#111">' + mon.diemTho + '</strong>'
+                    + ' → Quy đổi thang 10: <strong style="color:#0d9488">' + mon.diem + '</strong></span>'
+                    + '</div>'
+                    + (coChiTiet
+                        ? '<div style="font-size:0.75rem;color:#6b7280;margin-bottom:3px">Mốc: <strong style="color:#374151">' + mon.mocQuyDoi + '</strong></div>'
+                        + '<div style="background:#fff;border:1px solid #bae6fd;border-radius:5px;padding:5px 9px;font-family:monospace;font-size:0.76rem;color:#0369a1">'
+                        + mon.congThucThaySo
+                        + '</div>'
+                        : '<div style="font-size:0.75rem;color:#9ca3af;font-style:italic">Không có dữ liệu nội suy</div>'
+                    )
+                    + '</div>';
+            }).join('');
+
+            noiSuyVSAT = ''
+                + '<div style="margin:4px 0 10px">'
+                + '<div style="font-size:0.78rem;font-weight:700;color:#0369a1;margin-bottom:6px;'
+                + 'padding:5px 10px;background:#e0f2fe;border-radius:6px;display:inline-block">'
+                + '🔄 Chi tiết nội suy V-SAT → Thang điểm 10</div>'
+                + noiSuyRows
+                + '</div>';
+        }
 
         // Bước 3: quy đổi tổ hợp gốc
         var sameTH  = (Math.abs(lech) < 0.001);
@@ -344,6 +402,8 @@
                 : 'Bước 1 — Điểm thi từng môn')
         + '</p>'
         + '<div class="ct-score-grid">' + scoreCells + '</div>'
+
+        + noiSuyVSAT 
 
         // Bước 2
         + '<div class="ct-step-card">'
@@ -386,11 +446,46 @@
     }
 
     /* ==================== RENDER ĐGNL ==================== */
-    function renderDGNL(diemThxt, diemCong, diemUtqd, diemXt) {
+    function renderDGNL(diemThxt, diemCong, diemUtqd, diemXt,
+                    diemDauVao, mocQuyDoi, congThucTongQuat, congThucThaySo, ghiChu) {
+
         var sumThgxtCong = diemThxt + diemCong;
         var dutFormula = sumThgxtCong < 22.5
             ? 'Vì ' + sumThgxtCong.toFixed(2) + ' &lt; 22,5 → Cộng ưu tiên bình thường'
             : 'Vì ' + sumThgxtCong.toFixed(2) + ' &ge; 22,5 → [(30 &minus; ' + diemThxt.toFixed(2) + ' &minus; ' + diemCong.toFixed(2) + ') / 7.5] &times; MĐƯT';
+
+        // Block chi tiết nội suy (chỉ hiện nếu có data)
+        var chiTietCongThuc = '';
+        if (mocQuyDoi && congThucThaySo) {
+            chiTietCongThuc = ''
+            + '<div class="ct-step-card" style="border-left:3px solid #0d9488;background:#f0fdfa;margin-top:10px">'
+            + '<div class="ct-step-label" style="color:#0f766e;font-weight:700">📐 Chi tiết nội suy tuyến tính</div>'
+
+            + '<div style="margin-top:8px;font-size:0.78rem;color:#374151">'
+            + '<span style="color:#6b7280">Điểm đầu vào:</span> '
+            + '<strong style="color:#111827">' + diemDauVao + '</strong>'
+            + '</div>'
+
+            + '<div style="margin-top:6px;font-size:0.78rem;color:#374151">'
+            + '<span style="color:#6b7280">Mốc quy đổi:</span> '
+            + '<strong style="color:#111827">' + mocQuyDoi + '</strong>'
+            + '</div>'
+
+            + '<div style="margin-top:8px;font-size:0.75rem;color:#6b7280">Công thức tổng quát:</div>'
+            + '<div style="background:#fff;border:1px solid #ccfbf1;border-radius:6px;padding:7px 10px;'
+            + 'margin-top:4px;font-family:monospace;font-size:0.78rem;color:#0f766e">'
+            + (congThucTongQuat || 'y = c + ((x - a) / (b - a)) * (d - c)')
+            + '</div>'
+
+            + '<div style="margin-top:8px;font-size:0.75rem;color:#6b7280">Thay số:</div>'
+            + '<div style="background:#fff;border:1px solid #ccfbf1;border-radius:6px;padding:7px 10px;'
+            + 'margin-top:4px;font-family:monospace;font-size:0.78rem;color:#0f766e">'
+            + congThucThaySo
+            + '</div>'
+
+            + (ghiChu ? '<div style="margin-top:8px;font-size:0.73rem;color:#6b7280;font-style:italic">💡 ' + ghiChu + '</div>' : '')
+            + '</div>';
+        }
 
         return ''
         + '<div class="ct-step-card">'
@@ -398,6 +493,9 @@
         + '<div class="ct-result">ĐTHXT = ĐTHGXT = <span class="val">' + diemThxt.toFixed(2) + '</span></div>'
         + '<div class="ct-note" style="margin-top:8px">Với phương thức ĐGNL: ĐTHGXT = ĐTHXT — không cần quy đổi tổ hợp gốc</div>'
         + '</div>'
+
+        // ← Block chi tiết nội suy chèn vào đây
+        + chiTietCongThuc
 
         + '<hr style="border-color:#e5e7eb;margin:14px 0">'
         + '<p class="ct-section-title">Bước 2 — Cộng điểm ưu tiên & điểm cộng</p>'

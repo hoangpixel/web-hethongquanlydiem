@@ -37,6 +37,12 @@ public class ThiSinh {
     @Column(name = "dienThoai", length = 20)
     private String sdt;
 
+    @Column(name = "doituong", length = 50)
+    private String doiTuong;
+
+    @Column(name = "khuvuc", length = 50)
+    private String khuVuc;
+
     // --- HÀM KHỞI TẠO RỖNG ---
     public ThiSinh() {}
 
@@ -72,4 +78,10 @@ public class ThiSinh {
 
     public String getSdt() { return sdt; }
     public void setSdt(String sdt) { this.sdt = sdt; }
+
+    public String getDoiTuong() { return doiTuong; }
+    public void setDoiTuong(String doiTuong) { this.doiTuong = doiTuong; }
+
+    public String getKhuVuc() { return khuVuc; }
+    public void setKhuVuc(String khuVuc) { this.khuVuc = khuVuc; }
 }

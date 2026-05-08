@@ -75,7 +75,7 @@ body {
 .card-title-bar h5 { font-size: 0.95rem; font-weight: 700; color: var(--text); margin: 0; }
 .card-title-bar small { font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 1px; }
 /* THÔNG TIN THÍ SINH */
-.ts-grid { display: grid; grid-template-columns: repeat(5, 1fr); }
+.ts-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
 .ts-item { padding: 0.9rem 1.25rem; border-right: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6; }
 .ts-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #9ca3af; margin-bottom: 3px; }
 .ts-value { font-size: 0.9rem; font-weight: 600; color: var(--text); }

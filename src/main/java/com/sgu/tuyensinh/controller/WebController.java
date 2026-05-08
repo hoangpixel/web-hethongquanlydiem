@@ -21,6 +21,7 @@ import com.sgu.tuyensinh.model.ToHopMonThi;
 import com.sgu.tuyensinh.repository.DiemThiSinhRepository;
 import com.sgu.tuyensinh.repository.NganhRepository;
 import com.sgu.tuyensinh.repository.ToHopMonThiRepository;
+import com.sgu.tuyensinh.service.TinhDiemService;
 import com.sgu.tuyensinh.service.TuyensinhService;
 
 import jakarta.servlet.http.HttpSession;
@@ -39,6 +40,9 @@ public class WebController {
 
     @Autowired
     private ToHopMonThiRepository toHopRepository;
+
+    @Autowired
+    private TinhDiemService tinhDiemService;
 
     // 1. KHI NGƯỜI DÙNG GÕ localhost:8080/login -> HIỆN TRANG ĐĂNG NHẬP
     @GetMapping("/login")
@@ -119,9 +123,6 @@ public String hienThiTrangKetQua(HttpSession session, Model model,
         double diemXt   = nv.getDiemXetTuyen() != null ? nv.getDiemXetTuyen() : 0.0;
 
         Nganh nganh = nganhRepository.findByMaNganh(nv.getNvMaNganh());
-System.out.println("=== DEBUG ===");
-System.out.println("maNganh query: [" + nv.getNvMaNganh() + "]");
-System.out.println("nganh found: " + (nganh != null ? nganh.getMaNganh() : "NULL"));
         String toHopGoc = (nganh != null && nganh.getToHopGoc() != null)
                           ? nganh.getToHopGoc()
                           : nv.getTtThm();
@@ -143,12 +144,33 @@ System.out.println("nganh found: " + (nganh != null ? nganh.getMaNganh() : "NULL
 
         // "XÉT THPT", "ĐÁNH GIÁ V-SAT", "ĐGNL HCM"
         boolean isDGNL = pt.contains("DGNL") || pt.contains("ĐGNL");
+        boolean isVSAT = pt.contains("V-SAT") || pt.contains("VSAT");
+
         if (!isDGNL) {
-            map.put("danhSachMonJson", buildMonJson(nv.getNvMaNganh(), nv.getTtThm(), d));
+            if (isVSAT) {
+                map.put("danhSachMonJson", buildMonJsonVSAT(nv.getNvMaNganh(), nv.getTtThm(), d));
+            } else {
+                map.put("danhSachMonJson", buildMonJson(nv.getNvMaNganh(), nv.getTtThm(), d));
+            }
+            map.put("mocQuyDoi",       "");
+            map.put("congThucTongQuat","");
+            map.put("congThucThaySo",  "");
+            map.put("ghiChu",          "");
+            map.put("diemDauVao",      0.0);
         } else {
             map.put("danhSachMonJson", "[]");
-        }
 
+            // Lấy chi tiết nội suy ĐGNL
+            double diemDGNLRaw = d != null && d.getNangLuc() != null ? d.getNangLuc() : 0.0;
+            TinhDiemService.KetQuaQuyDoiChiTiet ct =
+                tinhDiemService.quyDoiDiemDGNLChiTiet(nv.getTtThm(), diemDGNLRaw);
+
+            map.put("diemDauVao",       diemDGNLRaw);
+            map.put("mocQuyDoi",        ct.getMocQuyDoi()        != null ? ct.getMocQuyDoi()        : "");
+            map.put("congThucTongQuat", ct.getCongThucTongQuat() != null ? ct.getCongThucTongQuat() : "");
+            map.put("congThucThaySo",   ct.getCongThucThaySo()   != null ? ct.getCongThucThaySo()   : "");
+            map.put("ghiChu",           ct.getGhiChu()           != null ? ct.getGhiChu()           : "");
+        }
         return map;
     }
 
@@ -190,12 +212,70 @@ System.out.println("nganh found: " + (nganh != null ? nganh.getMaNganh() : "NULL
         );
     }
 
+    private String buildMonJsonVSAT(String maNganh, String toHop, DiemThiSinh d) {
+        if (d == null || toHop == null || maNganh == null) return "[]";
+
+        String maNganhGoc = maNganh.replaceAll("(?i)-CLC.*$", "").trim();
+        ToHopMonThi th = toHopRepository.findByMaNganhAndMaToHop(maNganhGoc, toHop);
+
+        if (th == null) {
+            return "{\"error\":\"Không tìm thấy tổ hợp " + toHop + " cho ngành " + maNganh + "\"}";
+        }
+
+        String[] maMons = { th.getThMon1(), th.getThMon2(), th.getThMon3() };
+        int[]    heSos  = { th.getHsMon1().intValue(), th.getHsMon2().intValue(), th.getHsMon3().intValue() };
+
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < 3; i++) {
+            String maMon = maMons[i];
+            Double diemTho = getDiemTheoMa(maMon, d);   // điểm thô V-SAT (VD: 88.5)
+            double diemThoVal = diemTho != null ? diemTho : 0.0;
+
+            // Gọi nội suy để lấy chi tiết
+            TinhDiemService.KetQuaQuyDoiChiTiet ct =
+                    tinhDiemService.quyDoiDiemVSATChiTiet(maMon, diemThoVal);
+
+            double diemQD = ct.getDiemQuyDoi() != null ? ct.getDiemQuyDoi() : 0.0;
+            String moc    = ct.getMocQuyDoi()       != null ? ct.getMocQuyDoi().replace("\"", "&quot;")       : "";
+            String tq     = ct.getCongThucTongQuat() != null ? ct.getCongThucTongQuat().replace("\"", "&quot;") : "";
+            String ts     = ct.getCongThucThaySo()   != null ? ct.getCongThucThaySo().replace("\"", "&quot;")  : "";
+            String gc     = ct.getGhiChu()           != null ? ct.getGhiChu().replace("\"", "&quot;")          : "";
+
+            if (i > 0) sb.append(",");
+            sb.append(String.format(
+                "{&quot;ten&quot;:&quot;%s&quot;," +
+                "&quot;diemTho&quot;:%s," +
+                "&quot;diem&quot;:%s," +
+                "&quot;heSo&quot;:%d," +
+                "&quot;mocQuyDoi&quot;:&quot;%s&quot;," +
+                "&quot;congThucTongQuat&quot;:&quot;%s&quot;," +
+                "&quot;congThucThaySo&quot;:&quot;%s&quot;," +
+                "&quot;ghiChu&quot;:&quot;%s&quot;}",
+                maMon,
+                fmt(diemThoVal),
+                fmt(diemQD),
+                heSos[i],
+                moc, tq, ts, gc
+            ));
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
     private Double getDiemTheoMa(String maMon, DiemThiSinh d) {
         if (maMon == null || d == null) return null;
         switch (maMon.trim().toUpperCase()) {
             case "TO": case "TOÁN":            return d.getToan();
             case "VA": case "VĂN":             return d.getVan();
-            case "AN": case "ANH": case "N1":  return d.getNgoaiNguThi();
+            case "AN": case "ANH": case "N1":  {
+                // Lấy cái nào lớn hơn giữa điểm thi và điểm chứng chỉ
+                Double diemThi = d.getNgoaiNguThi();
+                Double diemCc  = d.getNgoaiNguCc();
+                if (diemThi == null && diemCc == null) return null;
+                if (diemThi == null) return diemCc;
+                if (diemCc  == null) return diemThi;
+                return Math.max(diemThi, diemCc);
+            }
             case "LI": case "LÍ": case "LÝ":  return d.getLy();
             case "HO": case "HÓA":             return d.getHoa();
             case "SI": case "SINH":            return d.getSinh();
@@ -288,4 +368,9 @@ System.out.println("nganh found: " + (nganh != null ? nganh.getMaNganh() : "NULL
     private double lamTron2(double v) {
         return Math.round(v * 100.0) / 100.0;
     }
+    
+    private String fmt(double value) {
+        return String.format("%.2f", value);
+    }
+
 }
