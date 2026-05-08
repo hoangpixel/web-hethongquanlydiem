@@ -1,5 +1,7 @@
 package com.sgu.tuyensinh.model;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -43,6 +45,10 @@ public class ThiSinh {
     @Column(name = "khuvuc", length = 50)
     private String khuVuc;
 
+    @Column(name = "ngaySinh")
+    private LocalDateTime ngaySinh;
+
+
     // --- HÀM KHỞI TẠO RỖNG ---
     public ThiSinh() {}
 
@@ -84,4 +90,7 @@ public class ThiSinh {
 
     public String getKhuVuc() { return khuVuc; }
     public void setKhuVuc(String khuVuc) { this.khuVuc = khuVuc; }
+    
+    public LocalDateTime getNgaySinh() { return ngaySinh; }
+    public void setNgaySinh(LocalDateTime ngaySinh) { this.ngaySinh = ngaySinh; }
 }
