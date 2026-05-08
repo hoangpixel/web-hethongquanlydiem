@@ -29,7 +29,7 @@
                     <a class="nav-link active" href="#" style="font-weight: 600; color: #0d6efd; border-bottom: 2px solid #0d6efd;">Kết Quả Xét Tuyển</a>
                 </li>
                 <li class="nav-item ms-3">
-                    <a class="nav-link" href="/tinh-diem" style="font-weight: 500;">Tính Điểm Tốt Nghiệp</a>
+                    <a class="nav-link hoverlinkhref" href="/tinh-diem" style="font-weight: 500;">Tính Điểm Tốt Nghiệp</a>
                 </li>
             </ul>
         </div>
@@ -195,13 +195,13 @@
 
                 <div class="pagination">
                     <c:if test="${currentPage > 0}">
-                        <a href="?page=${currentPage - 1}">Prev</a>
+                        <a href="?page=${currentPage - 1}"> ⮜ </a>
                     </c:if>
 
                     <span>Trang ${currentPage + 1}</span>
 
                     <c:if test="${currentPage < totalPages - 1}">
-                        <a href="?page=${currentPage + 1}">Next</a>
+                        <a href="?page=${currentPage + 1}"> ⮞ </a>
                     </c:if>
                 </div>
 

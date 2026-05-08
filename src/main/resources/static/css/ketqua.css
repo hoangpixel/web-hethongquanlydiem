@@ -336,3 +336,8 @@ body {
         text-align: center;
     }
 }
+
+.hoverlinkhref:hover
+{
+    color: white !important;
+}
