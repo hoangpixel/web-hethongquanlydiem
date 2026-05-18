@@ -154,6 +154,78 @@
                 background-position: 200% center;
             }
         }
+
+        .nganh-table-wrap {
+            max-height: 55vh;
+            overflow: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+        }
+
+        /* Modal/backdrop: giảm tối + luôn nổi lên trên */
+        /* .modal {
+            z-index: 9999;
+        }
+        .modal-backdrop {
+            z-index: 9999;
+        }
+        .modal-backdrop.show {
+            opacity: 0.25;
+        } */
+
+/* --- CHỈNH LẠI GIAO DIỆN THANH TÌM KIẾM 3 MÓN --- */
+/* Ép chiều cao bằng nhau cho cả 3 anh em */
+#nganhSearchType, #nganhSearchInput, #nganhSearchBtn {
+    height: 46px !important; 
+    min-height: 46px !important;
+    box-shadow: none !important;
+}
+
+/* 1. Thằng đứng đầu (Combobox) */
+#nganhSearchType {
+    max-width: 140px; /* Ép nó gọn lại, nhường chỗ cho ô nhập chữ */
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    background-color: #f1f5f9; /* Cho cái nền hơi xám xíu để phân biệt */
+    border-color: #cbd5e1;
+    color: var(--brand-1);
+    font-weight: 600;
+    cursor: pointer;
+}
+#nganhSearchType:focus {
+    border-color: var(--brand-2);
+    background-color: #ffffff;
+    z-index: 5; /* Nổi lên khi bấm vào */
+}
+
+/* 2. Thằng đứng giữa (Ô nhập liệu) */
+#nganhSearchInput {
+    border-radius: 0 !important; /* Đứng giữa nên phải vuông vức 4 góc */
+    border-left: 0 !important; /* Xóa viền trái để chìm vào combobox */
+    border-color: #cbd5e1;
+}
+#nganhSearchInput:focus {
+    border-color: var(--brand-2);
+    border-left: 1px solid var(--brand-2) !important; /* Hiện lại viền khi gõ */
+    z-index: 5;
+}
+
+/* 3. Thằng chốt sổ (Nút Tìm kiếm) */
+#nganhSearchBtn {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    padding: 0 24px !important;
+    font-size: 1.05rem !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Hiệu ứng phát sáng nguyên khối khi focus vào bất kỳ đâu trong thanh */
+.search-group-wrapper:focus-within {
+    box-shadow: 0 4px 15px rgba(14, 165, 233, 0.15);
+    border-radius: 12px;
+}
     </style>
 </head>
 <body>
@@ -191,9 +263,15 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold" style="color: var(--brand-1);">Mã Ngành Xét Tuyển</label>
-                                <input type="text" class="form-control" name="maNganh" value="${maNganhNhap}" placeholder="VD: 7480201" required>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="maNganhDisplay" value="${maNganhHienThi}" placeholder="VD: 7480201" readonly required>
+                                    <input type="hidden" id="maNganhInput" name="maNganh" value="${maNganhNhap}">
+                                    <button type="button" class="btn btn-outline-primary" style="border-radius: 12px;" data-bs-toggle="modal" data-bs-target="#modalChonMaNganh">Chọn</button>
+                                </div>
                             </div>
                         </div>
+
+
 
                         <div class="row mb-4" id="nhomDiem8Mon">
                             <!-- <div class="col-12 mb-2">
@@ -483,6 +561,70 @@
     </div>
 </div>
 
+                        <!-- Modal chọn mã ngành -->
+                        <div class="modal fade" id="modalChonMaNganh" tabindex="-1" aria-labelledby="modalChonMaNganhLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-scrollable modal-lg">
+                                <div class="modal-content" style="border-radius: 18px;">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title fw-bold" id="modalChonMaNganhLabel" style="color: var(--brand-1);">Chọn mã ngành</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                                    </div>
+                                    <div class="modal-body">
+<div class="mb-4 mt-2">
+    <label class="form-label fw-bold text-dark mb-2">Tìm mã ngành</label>
+    <!-- Thêm class search-group-wrapper vào đây nha -->
+    <div class="input-group shadow-sm search-group-wrapper">
+        <select class="form-select" id="nganhSearchType" aria-label="Chọn kiểu tìm kiếm">
+            <option value="MA" selected>Mã ngành</option>
+            <option value="TEN">Tên ngành</option>
+        </select>
+        <input type="text" class="form-control" id="nganhSearchInput" placeholder="Nhập từ khóa cần tìm...">
+        <button type="button" class="btn btn-primary fw-bold" id="nganhSearchBtn">Tìm kiếm</button>
+    </div>
+</div>
+
+                                        <div class="nganh-table-wrap">
+                                            <table class="table table-hover align-middle mb-0">
+                                                <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
+                                                    <tr>
+                                                        <th style="width: 28%;">Mã ngành</th>
+                                                        <th style="width: 52%;">Tên ngành</th>
+                                                        <th class="text-end" style="width: 20%;">Thao tác</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="nganhTableBody">
+                                                    <c:choose>
+                                                        <c:when test="${empty dsNganh}">
+                                                            <tr>
+                                                                <td colspan="3" class="text-center text-muted py-4">Không có dữ liệu mã ngành</td>
+                                                            </tr>
+                                                        </c:when>
+                                                        <c:otherwise>
+                                                            <c:forEach var="n" items="${dsNganh}">
+                                                                <tr class="nganh-row" data-ma="${n.maNganh}" data-ten="${n.tenNganh}">
+                                                                    <td class="fw-bold">${n.maNganh}</td>
+                                                                    <td>${n.tenNganh}</td>
+                                                                    <td class="text-end">
+                                                                        <button type="button" class="btn btn-sm btn-outline-primary btn-chon-nganh">Chọn</button>
+                                                                    </td>
+                                                                </tr>
+                                                            </c:forEach>
+                                                        </c:otherwise>
+                                                    </c:choose>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer d-flex justify-content-between align-items-center">
+                                        <div class="text-muted" id="nganhPagerInfo" style="font-size: 0.95rem;"></div>
+                                        <nav aria-label="Phân trang mã ngành">
+                                            <ul class="pagination mb-0" id="nganhPagination"></ul>
+                                        </nav>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     function capNhatFormTheoPhuongThuc() {
@@ -542,6 +684,195 @@
     // Chạy các sự kiện khi load trang và khi đổi phương thức
     document.getElementById('phuongThuc').addEventListener('change', capNhatFormTheoPhuongThuc);
     capNhatFormTheoPhuongThuc(); // Khởi tạo lần đầu lúc mới vào trang
+
+    // ----- Chọn mã ngành: search + phân trang (20 dòng / trang) -----
+    (function initMaNganhPicker() {
+        const pageSize = 20;
+
+        const modalEl = document.getElementById('modalChonMaNganh');
+        const maNganhInput = document.getElementById('maNganhInput');
+        const maNganhDisplay = document.getElementById('maNganhDisplay');
+        const searchType = document.getElementById('nganhSearchType');
+        const searchInput = document.getElementById('nganhSearchInput');
+        const searchBtn = document.getElementById('nganhSearchBtn');
+        const tableBody = document.getElementById('nganhTableBody');
+        const pagerInfo = document.getElementById('nganhPagerInfo');
+        const pagination = document.getElementById('nganhPagination');
+        const form = document.getElementById('formTinhDiem');
+
+        if (!modalEl || !maNganhInput || !maNganhDisplay || !searchType || !searchInput || !searchBtn || !tableBody || !pagerInfo || !pagination) return;
+
+        const allRows = Array.from(tableBody.querySelectorAll('tr.nganh-row'));
+        let filteredRows = allRows;
+        let currentPage = 1;
+
+        function normalizeQuery(q) {
+            return (q || '').toString().trim();
+        }
+
+        function normalizeText(s) {
+            return (s || '')
+                .toString()
+                .trim()
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '');
+        }
+
+        function placeholderForType(t) {
+            return t === 'TEN' ? 'Nhập tên ngành cần tìm...' : 'Nhập mã ngành cần tìm...';
+        }
+
+        function applyFilter() {
+            const type = (searchType.value || 'MA').toUpperCase();
+            const qRaw = normalizeQuery(searchInput.value);
+            const q = type === 'TEN' ? normalizeText(qRaw) : qRaw;
+            if (!q) {
+                filteredRows = allRows;
+            } else {
+                filteredRows = allRows.filter(r => {
+                    if (type === 'TEN') {
+                        return normalizeText(r.dataset.ten || '').includes(q);
+                    }
+                    return (r.dataset.ma || '').includes(q);
+                });
+            }
+            currentPage = 1;
+            render();
+        }
+
+        function totalPages() {
+            return Math.max(1, Math.ceil(filteredRows.length / pageSize));
+        }
+
+        function clampPage(p) {
+            const tp = totalPages();
+            return Math.min(tp, Math.max(1, p));
+        }
+
+        function setVisibleRows() {
+            const tp = totalPages();
+            currentPage = clampPage(currentPage);
+
+            // Ẩn hết trước
+            allRows.forEach(r => r.style.display = 'none');
+
+            // Hiện những dòng thuộc page hiện tại
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+            filteredRows.slice(start, end).forEach(r => r.style.display = 'table-row');
+
+            if (filteredRows.length === 0) {
+                pagerInfo.textContent = 'Không có kết quả.';
+            } else {
+                const showingStart = start + 1;
+                const showingEnd = Math.min(end, filteredRows.length);
+                pagerInfo.textContent = 'Hiển thị ' + showingStart + '-' + showingEnd + ' / ' + filteredRows.length + ' (Trang ' + currentPage + '/' + tp + ')';
+            }
+        }
+
+        function buildPageButton(label, page, disabled, active) {
+            const li = document.createElement('li');
+            li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+
+            const a = document.createElement('a');
+            a.className = 'page-link';
+            a.href = '#';
+            a.textContent = label;
+            a.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (disabled) return;
+                currentPage = page;
+                render();
+            });
+
+            li.appendChild(a);
+            return li;
+        }
+
+        function renderPagination() {
+            const tp = totalPages();
+            pagination.innerHTML = '';
+
+            // Prev
+            pagination.appendChild(buildPageButton('‹', clampPage(currentPage - 1), currentPage === 1, false));
+
+            // Hiện tối đa 7 nút trang quanh current
+            const maxButtons = 7;
+            let start = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+            let end = Math.min(tp, start + maxButtons - 1);
+            start = Math.max(1, end - maxButtons + 1);
+
+            for (let p = start; p <= end; p++) {
+                pagination.appendChild(buildPageButton(String(p), p, false, p === currentPage));
+            }
+
+            // Next
+            pagination.appendChild(buildPageButton('›', clampPage(currentPage + 1), currentPage === tp, false));
+        }
+
+        function render() {
+            setVisibleRows();
+            renderPagination();
+        }
+
+        // Chọn mã ngành
+        tableBody.addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn-chon-nganh');
+            const row = e.target.closest('tr.nganh-row');
+            const targetRow = (btn && btn.closest('tr.nganh-row')) || row;
+            if (!targetRow) return;
+
+            const ma = targetRow.dataset.ma;
+            const ten = targetRow.dataset.ten || '';
+            if (!ma) return;
+            maNganhInput.value = ma;
+            maNganhDisplay.value = ten ? (ma + ' - ' + ten) : ma;
+
+            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            modal.hide();
+        });
+
+        // Trước khi submit: đảm bảo field gửi lên chỉ là mã ngành
+        if (form) {
+            form.addEventListener('submit', () => {
+                if (maNganhInput.value && maNganhInput.value.trim() !== '') return;
+                const displayVal = (maNganhDisplay.value || '').trim();
+                if (!displayVal) return;
+
+                const parts = displayVal.split(' - ');
+                maNganhInput.value = (parts[0] || '').trim();
+            });
+        }
+
+        searchBtn.addEventListener('click', applyFilter);
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                applyFilter();
+            }
+        });
+
+        searchType.addEventListener('change', () => {
+            const type = (searchType.value || 'MA').toUpperCase();
+            searchInput.placeholder = placeholderForType(type);
+            applyFilter();
+            searchInput.focus();
+        });
+
+        modalEl.addEventListener('shown.bs.modal', () => {
+            const type = (searchType.value || 'MA').toUpperCase();
+            searchInput.value = '';
+            searchInput.placeholder = placeholderForType(type);
+            filteredRows = allRows;
+            currentPage = 1;
+            render();
+            searchInput.focus();
+        });
+
+        // Render lần đầu (để không bị trống nếu modal mở ngay)
+        render();
+    })();
 </script>
 </body>
 </html>

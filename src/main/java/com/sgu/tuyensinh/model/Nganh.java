@@ -13,6 +13,9 @@ public class Nganh {
     @Column(name = "manganh")
     private String maNganh;
 
+    @Column(name = "tennganh")
+    private String tenNganh;
+
     @Column(name = "n_tohopgoc")
     private String toHopGoc;
 
@@ -28,6 +31,9 @@ public class Nganh {
     // Getters và Setters
     public String getMaNganh() { return maNganh; }
     public void setMaNganh(String maNganh) { this.maNganh = maNganh; }
+
+    public String getTenNganh() { return tenNganh; }
+    public void setTenNganh(String tenNganh) { this.tenNganh = tenNganh; }
 
     public String getToHopGoc() { return toHopGoc; }
     public void setToHopGoc(String toHopGoc) { this.toHopGoc = toHopGoc; }

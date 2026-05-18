@@ -12,6 +12,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.data.domain.Sort;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,7 +34,9 @@ public class TrangChuController {
     private NganhRepository nganhRepository;
 
     @GetMapping("/tinh-diem")
-    public String hienThiTrangChu() {
+    public String hienThiTrangChu(Model model) {
+        model.addAttribute("dsNganh", nganhRepository.findAll(Sort.by(Sort.Direction.ASC, "maNganh")));
+        model.addAttribute("maNganhHienThi", "");
         return "tinhdiem"; 
     }
 
@@ -55,6 +58,8 @@ public class TrangChuController {
             @RequestParam(value = "khuVucUuTien", required = false) String khuVucUuTien,
             @RequestParam(value = "doiTuongUuTien", required = false) String doiTuongUuTien,
             Model model) {
+
+        model.addAttribute("dsNganh", nganhRepository.findAll(Sort.by(Sort.Direction.ASC, "maNganh")));
 
         String maNganhChuan = maNganh == null ? "" : maNganh.trim();
 
@@ -82,6 +87,11 @@ public class TrangChuController {
 
 
         Nganh nganhThongTin = nganhRepository.findByMaNganh(maNganhChuan);
+        if (nganhThongTin != null && nganhThongTin.getTenNganh() != null && !nganhThongTin.getTenNganh().isBlank()) {
+            model.addAttribute("maNganhHienThi", maNganhChuan + " - " + nganhThongTin.getTenNganh());
+        } else {
+            model.addAttribute("maNganhHienThi", maNganhChuan);
+        }
         Double diemSan = null;
         if (nganhThongTin != null) {
             if ("THPT".equalsIgnoreCase(phuongThuc)) diemSan = nganhThongTin.getDiemSanThpt();
