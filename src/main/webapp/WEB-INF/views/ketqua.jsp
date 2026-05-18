@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ketqua.css?v=20260424" />
     <link rel="icon" href="${pageContext.request.contextPath}/img/logo.png" type="image/png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 <body>
 <!-- NAVBAR -->
@@ -110,14 +111,21 @@
  
         <!-- SECTION 2: DANH SÁCH NGUYỆN VỌNG -->
         <div class="info-card">
-            <div class="card-title-bar">
-                <div class="title-icon icon-green">📜</div>
-                <div>
-                    <h5>Danh Sách Nguyện Vọng Đăng Ký</h5>
-                    <small>Kết quả xét tuyển theo từng nguyện vọng</small>
+            <div class="card-title-bar" style="display:flex; align-items:center; justify-content:space-between;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div class="title-icon icon-green">📜</div>
+                    <div>
+                        <h5>Danh Sách Nguyện Vọng Đăng Ký</h5>
+                        <small>Kết quả xét tuyển theo từng nguyện vọng</small>
+                    </div>
                 </div>
+                <button class="btn-filter-nv" id="btnFilterNV" onclick="openFilterModal()" title="Lọc & sắp xếp">
+                    <i class="bi bi-funnel-fill"></i>
+                </button>
             </div>
             <div class="table-responsive">
+                <!-- Filter tags -->
+            <div id="filterTagRow" style="display:none; gap:6px; flex-wrap:wrap;"></div>
                 <table class="nv-table">
                     <thead>
                         <tr>
@@ -172,7 +180,10 @@
                                             data-moc-quy-doi="${nv.mocQuyDoi}"
                                             data-cong-thuc-tong-quat="${nv.congThucTongQuat}"
                                             data-cong-thuc-thay-so="${nv.congThucThaySo}"
-                                            data-ghi-chu="${nv.ghiChu}">
+                                            data-ghi-chu="${nv.ghiChu}"
+                                            data-danh-sach-giai="${nv.danhSachGiaiJson}"
+                                            data-doi-tuong="${thiSinh.doiTuong}"
+                                            data-khu-vuc="${thiSinh.khuVuc}">
                                         Chi Tiết
                                     </button>
                                 </td>
@@ -244,6 +255,50 @@
         </div>
     </div>
 
+    <!-- MODAL LỌC NGUYỆN VỌNG -->
+    <div id="filterNVOverlay" onclick="onOverlayClick(event)">
+        <div class="filter-nv-modal">
+            <div class="filter-nv-header">
+                <span class="filter-nv-title">
+                    <i class="bi bi-funnel-fill" style="color:#1d4ed8;"></i> Lọc & Sắp xếp
+                </span>
+                <button class="filter-nv-close" onclick="closeFilterModal()" aria-label="Đóng">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+
+            <div class="filter-nv-group">
+                <div class="filter-nv-label">Ngành</div>
+                <select class="filter-nv-select" id="fnvNganh">
+                    <option value="">Tất cả ngành</option>
+                </select>
+            </div>
+
+            <div class="filter-nv-group">
+                <div class="filter-nv-label">Tổ hợp môn</div>
+                <select class="filter-nv-select" id="fnvToHop">
+                    <option value="">Tất cả tổ hợp</option>
+                </select>
+            </div>
+
+            <div class="filter-nv-group">
+                <div class="filter-nv-label">Sắp xếp điểm xét tuyển</div>
+                <div class="sort-btns-nv">
+                    <button class="sort-opt-nv" id="fnvSortAsc" onclick="fnvSelectSort('asc')">
+                        <i class="bi bi-sort-numeric-up"></i> Tăng dần
+                    </button>
+                    <button class="sort-opt-nv" id="fnvSortDesc" onclick="fnvSelectSort('desc')">
+                        <i class="bi bi-sort-numeric-down"></i> Giảm dần
+                    </button>
+                </div>
+            </div>
+
+            <button class="btn-apply-filter-nv" onclick="fnvApply()">
+                <i class="bi bi-check-lg"></i> Áp dụng
+            </button>
+        </div>
+    </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -271,6 +326,9 @@
             var congThucTongQuat= this.dataset.congThucTongQuat || '';
             var congThucThaySo  = this.dataset.congThucThaySo  || '';
             var ghiChu          = this.dataset.ghiChu          || '';
+            var danhSachGiaiB64 = this.dataset.danhSachGiai || '';
+            var doiTuong = this.dataset.doiTuong || '';
+            var khuVuc   = this.dataset.khuVuc   || '';
 
             // ── 2. Parse danh sách môn từ JSON ──
             var rawB64  = this.dataset.danhSachMon || '';
@@ -315,14 +373,16 @@
             } else {
                 var pt = phuongThuc ? phuongThuc.toUpperCase() : '';
                 // "XÉT THPT", "ĐÁNH GIÁ V-SAT", "ĐGNL HCM"
-                if (pt.indexOf('DGNL') >= 0 || pt.indexOf('ĐGNL') >= 0) {
+                if (pt.indexOf('TUYỂN THẲNG') >= 0 || pt.indexOf('TUYEN THANG') >= 0) {
+                    body = renderTuyenThang(danhSachGiaiB64, diemCong, diemUtqd, diemXt);
+                } else if (pt.indexOf('DGNL') >= 0 || pt.indexOf('ĐGNL') >= 0) {
                     body = renderDGNL(diemThxt, diemCong, diemUtqd, diemXt,
-                                    diemDauVao, mocQuyDoi, congThucTongQuat, congThucThaySo, ghiChu);
+                                    diemDauVao, mocQuyDoi, congThucTongQuat, congThucThaySo, ghiChu, doiTuong, khuVuc);
                 } else if (pt.indexOf('V-SAT') >= 0 || pt.indexOf('VSAT') >= 0) {
-                    body = renderTHPT(toHop, toHopGoc, monHoc, lech, diemThxt, diemThgxt, diemCong, diemUtqd, diemXt, true);
+                    body = renderTHPT(toHop, toHopGoc, monHoc, lech, diemThxt, diemThgxt, diemCong, diemUtqd, diemXt, true, doiTuong, khuVuc);
                 } else {
                     // Mặc định còn lại là THPT
-                    body = renderTHPT(toHop, toHopGoc, monHoc, lech, diemThxt, diemThgxt, diemCong, diemUtqd, diemXt, false);
+                    body = renderTHPT(toHop, toHopGoc, monHoc, lech, diemThxt, diemThgxt, diemCong, diemUtqd, diemXt, false, doiTuong, khuVuc);
                 }
             }
 
@@ -333,14 +393,64 @@
 
     /* ==================== RENDER THPT / V-SAT ==================== */
     // Dùng thẳng điểm từ backend — không tính lại
-    function renderTHPT(toHop, toHopGoc, monHoc, lech, diemThxt, diemThgxt, diemCong, diemUtqd, diemXt, isVSAT) {
+    function renderTHPT(toHop, toHopGoc, monHoc, lech, diemThxt, diemThgxt, diemCong, diemUtqd, diemXt, isVSAT, doiTuong, khuVuc) {
 
         // Bước 1: lưới điểm môn
         var scoreCells = monHoc.map(function(mon) {
+            var extraHtml = '';
+            var diemHienThi = mon.diem; // mặc định
+
+            if (mon.isNgoaiNgu) {
+                var dThi = mon.diemThi != null ? parseFloat(mon.diemThi) : null;
+                var dCc  = mon.diemCc  != null ? parseFloat(mon.diemCc)  : null;
+
+                // Xác định điểm nào được chọn (cao hơn)
+                var isChosenCc = mon.ccDuocChon === true || mon.ccDuocChon === 'true';
+
+                // Điểm hiển thị to ở giữa card = điểm được chọn
+                if (isChosenCc && dCc != null) {
+                    diemHienThi = dCc.toFixed(2);
+                } else if (!isChosenCc && dThi != null) {
+                    diemHienThi = dThi.toFixed(2);
+                }
+
+                var badgeThi = '';
+                var badgeCc  = '';
+
+                if (dThi != null) {
+                    // Thi luôn nổi bật (bold, viền xanh đậm), không phụ thuộc vào cái nào được chọn
+                    badgeThi = '<div style="font-size:0.72rem;margin-top:4px;padding:3px 9px;border-radius:10px;display:inline-block;'
+                        + 'background:#dbeafe;color:#1d4ed8;font-weight:700;border:2px solid #93c5fd'
+                        + '">'
+                        + 'Thi: ' + dThi.toFixed(2)
+                        + (!isChosenCc ? ' ✓' : '')
+                        + '</div>';
+                }
+                /*if (dCc != null) {
+                    // CC chỉ nổi bật nếu được chọn, còn không thì mờ
+                    badgeCc = '<div style="font-size:0.72rem;margin-top:3px;padding:2px 7px;border-radius:10px;display:inline-block;'
+                        + (isChosenCc
+                            ? 'background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb'   // CC được chọn → mờ đi
+                            : 'background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb')  // CC không chọn → mờ
+                        + '">'
+                        + 'CC: ' + dCc.toFixed(2)
+                        + (isChosenCc ? ' ✓' : '')
+                        + '</div>';
+                }*/
+                if (dThi == null && dCc == null) {
+                    badgeThi = '<div style="font-size:0.71rem;color:#9ca3af;margin-top:4px">Không có điểm</div>';
+                }
+
+                extraHtml = '<div style="margin-top:5px;display:flex;flex-direction:column;align-items:center;gap:2px">'
+                    + badgeThi + badgeCc
+                    + '</div>';
+            }
+
             return '<div class="ct-score-item">'
                 + '<div class="ct-score-name">' + mon.ten + '</div>'
-                + '<div class="ct-score-val">'  + mon.diem + '</div>'
+                + '<div class="ct-score-val">'  + diemHienThi + '</div>'
                 + '<div class="ct-score-wt">Hệ số ' + mon.heSo + '</div>'
+                + extraHtml
                 + '</div>';
         }).join('');
 
@@ -357,7 +467,7 @@
                 var coChiTiet = mon.mocQuyDoi && mon.congThucThaySo;
                 return '<div style="border:1px solid #e0f2fe;border-radius:8px;padding:10px 12px;margin-bottom:8px;background:#f0f9ff">'
                     + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
-                    + '<span style="font-weight:700;color:#0369a1;font-size:0.82rem">📌 Môn: ' + mon.ten + '</span>'
+                    + '<span style="font-weight:700;color:#0369a1;font-size:0.82rem"> Môn: ' + mon.ten + '</span>'
                     + '<span style="font-size:0.78rem;color:#6b7280">Điểm thô V-SAT: <strong style="color:#111">' + mon.diemTho + '</strong>'
                     + ' → Quy đổi thang 10: <strong style="color:#0d9488">' + mon.diem + '</strong></span>'
                     + '</div>'
@@ -375,7 +485,7 @@
                 + '<div style="margin:4px 0 10px">'
                 + '<div style="font-size:0.78rem;font-weight:700;color:#0369a1;margin-bottom:6px;'
                 + 'padding:5px 10px;background:#e0f2fe;border-radius:6px;display:inline-block">'
-                + '🔄 Chi tiết nội suy V-SAT → Thang điểm 10</div>'
+                + 'Chi tiết nội suy V-SAT → Thang điểm 10</div>'
                 + noiSuyRows
                 + '</div>';
         }
@@ -391,9 +501,10 @@
 
         // Bước 4: công thức ĐƯT
         var sumThgxtCong = diemThgxt + diemCong;
+        var mdut = tinhMDUT(doiTuong, khuVuc);
         var dutFormula = sumThgxtCong < 22.5
-            ? 'Vì ' + sumThgxtCong.toFixed(2) + ' &lt; 22,5 → Cộng ưu tiên bình thường'
-            : 'Vì ' + sumThgxtCong.toFixed(2) + ' &ge; 22,5 → [(30 &minus; ' + diemThgxt.toFixed(2) + ' &minus; ' + diemCong.toFixed(2) + ') / 7.5] &times; MĐƯT';
+            ? 'Vì ' + sumThgxtCong.toFixed(2) + ' &lt; 22,5 → Cộng ưu tiên bình thường (MĐƯT = ' + mdut.toFixed(2) + ')'
+            : 'Vì ' + sumThgxtCong.toFixed(2) + ' &ge; 22,5 → [(30 &minus; ' + diemThgxt.toFixed(2) + ' &minus; ' + diemCong.toFixed(2) + ') / 7.5] &times; ' + mdut.toFixed(2);
 
         return ''
         // Bước 1
@@ -447,19 +558,20 @@
 
     /* ==================== RENDER ĐGNL ==================== */
     function renderDGNL(diemThxt, diemCong, diemUtqd, diemXt,
-                    diemDauVao, mocQuyDoi, congThucTongQuat, congThucThaySo, ghiChu) {
+                    diemDauVao, mocQuyDoi, congThucTongQuat, congThucThaySo, ghiChu, doiTuong, khuVuc) {
 
         var sumThgxtCong = diemThxt + diemCong;
+        var mdut = tinhMDUT(doiTuong, khuVuc);
         var dutFormula = sumThgxtCong < 22.5
-            ? 'Vì ' + sumThgxtCong.toFixed(2) + ' &lt; 22,5 → Cộng ưu tiên bình thường'
-            : 'Vì ' + sumThgxtCong.toFixed(2) + ' &ge; 22,5 → [(30 &minus; ' + diemThxt.toFixed(2) + ' &minus; ' + diemCong.toFixed(2) + ') / 7.5] &times; MĐƯT';
+            ? 'Vì ' + sumThgxtCong.toFixed(2) + ' &lt; 22,5 → Cộng ưu tiên bình thường (MĐƯT = ' + mdut.toFixed(2) + ')'
+            : 'Vì ' + sumThgxtCong.toFixed(2) + ' &ge; 22,5 → [(30 &minus; ' + diemThgxt.toFixed(2) + ' &minus; ' + diemCong.toFixed(2) + ') / 7.5] &times; ' + mdut.toFixed(2);
 
         // Block chi tiết nội suy (chỉ hiện nếu có data)
         var chiTietCongThuc = '';
         if (mocQuyDoi && congThucThaySo) {
             chiTietCongThuc = ''
             + '<div class="ct-step-card" style="border-left:3px solid #0d9488;background:#f0fdfa;margin-top:10px">'
-            + '<div class="ct-step-label" style="color:#0f766e;font-weight:700">📐 Chi tiết nội suy tuyến tính</div>'
+            + '<div class="ct-step-label" style="color:#0f766e;font-weight:700">Chi tiết nội suy tuyến tính</div>'
 
             + '<div style="margin-top:8px;font-size:0.78rem;color:#374151">'
             + '<span style="color:#6b7280">Điểm đầu vào:</span> '
@@ -483,7 +595,7 @@
             + congThucThaySo
             + '</div>'
 
-            + (ghiChu ? '<div style="margin-top:8px;font-size:0.73rem;color:#6b7280;font-style:italic">💡 ' + ghiChu + '</div>' : '')
+            + (ghiChu ? '<div style="margin-top:8px;font-size:0.73rem;color:#6b7280;font-style:italic">' + ghiChu + '</div>' : '')
             + '</div>';
         }
 
@@ -494,7 +606,6 @@
         + '<div class="ct-note" style="margin-top:8px">Với phương thức ĐGNL: ĐTHGXT = ĐTHXT — không cần quy đổi tổ hợp gốc</div>'
         + '</div>'
 
-        // ← Block chi tiết nội suy chèn vào đây
         + chiTietCongThuc
 
         + '<hr style="border-color:#e5e7eb;margin:14px 0">'
@@ -520,6 +631,219 @@
             + '<span class="ct-add-label">' + label + '</span>'
             + '<span class="ct-add-val">'   + val   + '</span>'
             + '</div>';
+    }
+
+    /* ==================== RENDER Tuyen Thang ==================== */
+    function renderTuyenThang(b64, diemCong, diemUtqd, diemXt) {
+        var dsGiai = [];
+        try {
+            var json = decodeURIComponent(escape(atob(b64)));
+            dsGiai = JSON.parse(json);
+        } catch(e) {}
+
+        var giaiRows = '';
+        if (dsGiai.length === 0) {
+            giaiRows = '<div style="color:#6b7280;font-style:italic">Không có dữ liệu giải thưởng</div>';
+        } else {
+            giaiRows = dsGiai.map(function(g) {
+                return '<div style="display:flex;align-items:center;gap:12px;'
+                    + 'padding:12px 16px;border:1px solid #e0f2fe;border-radius:8px;margin-bottom:8px;background:#f0f9ff">'
+                    + '<span style="font-size:1.4rem;">🏆</span>'
+                    + '<div>'
+                    + '<div style="font-weight:700;color:#0369a1;font-size:0.9rem">' + g.loaiGiai + '</div>'
+                    + '<div style="font-size:0.8rem;color:#374151;margin-top:3px">'
+                    + 'Môn: <strong>' + g.maMon + '</strong>'
+                    + ' &nbsp;|&nbsp; Cấp: <strong>' + g.capGiai + '</strong>'
+                    + ' &nbsp;|&nbsp; Đối tượng: <strong>' + g.doiTuong + '</strong>'
+                    + '</div>'
+                    + '</div>'
+                    + '</div>';
+            }).join('');
+        }
+
+        return '<p class="ct-section-title">Giải thưởng & Điều kiện tuyển thẳng</p>'
+            + '<div>' + giaiRows + '</div>';
+    }
+    // ── Lọc Nguyện Vọng ──
+    (function () {
+        // Lấy tất cả rows từ tbody
+        var tbody = document.querySelector('.nv-table tbody');
+        var allRows = tbody ? Array.from(tbody.querySelectorAll('tr[data-nganh]')) : [];
+
+        // Gán data-attribute cho mỗi tr để dễ lọc
+        // (Chạy 1 lần sau khi DOM load)
+        document.querySelectorAll('.nv-table tbody tr').forEach(function (tr) {
+            var cells = tr.querySelectorAll('td');
+            if (cells.length < 4) return;
+            tr.dataset.nganh  = cells[1].textContent.trim(); // Mã ngành
+            tr.dataset.tohop  = cells[3].textContent.trim(); // Tổ hợp
+            tr.dataset.diem   = parseFloat(cells[4].textContent.trim()) || 0;
+        });
+
+        // Populate dropdowns từ dữ liệu thực
+        var rows = Array.from(document.querySelectorAll('.nv-table tbody tr'));
+        var nganhs = [...new Set(rows.map(r => r.dataset.nganh).filter(Boolean))];
+        var toHops = [...new Set(rows.map(r => r.dataset.tohop).filter(Boolean))];
+
+        var selN = document.getElementById('fnvNganh');
+        var selT = document.getElementById('fnvToHop');
+        nganhs.forEach(function (n) {
+            var o = document.createElement('option');
+            o.value = n; o.textContent = n;
+            selN.appendChild(o);
+        });
+        toHops.forEach(function (t) {
+            var o = document.createElement('option');
+            o.value = t; o.textContent = t;
+            selT.appendChild(o);
+        });
+        // State
+        window._fnvState = { nganh: '', tohop: '', sort: null };
+
+        window.openFilterModal = function () {
+            var s = window._fnvState;
+            document.getElementById('fnvNganh').value  = s.nganh;
+            document.getElementById('fnvToHop').value  = s.tohop;
+            document.getElementById('fnvSortAsc').classList.toggle('selected',  s.sort === 'asc');
+            document.getElementById('fnvSortDesc').classList.toggle('selected', s.sort === 'desc');
+            document.getElementById('filterNVOverlay').classList.add('show');
+        };
+
+        window.closeFilterModal = function () {
+            document.getElementById('filterNVOverlay').classList.remove('show');
+        };
+
+        window.onOverlayClick = function (e) {
+            if (e.target === document.getElementById('filterNVOverlay')) closeFilterModal();
+        };
+
+        window.fnvSelectSort = function (dir) {
+            var s = window._fnvState;
+            s.sort = (s.sort === dir) ? null : dir;
+            document.getElementById('fnvSortAsc').classList.toggle('selected',  s.sort === 'asc');
+            document.getElementById('fnvSortDesc').classList.toggle('selected', s.sort === 'desc');
+        };
+
+        window.fnvApply = function () {
+            var s = window._fnvState;
+            s.nganh = document.getElementById('fnvNganh').value;
+            s.tohop = document.getElementById('fnvToHop').value;
+            fnvRender();
+            closeFilterModal();
+        };
+
+        function fnvRender() {
+            var s = window._fnvState;
+            var rows = Array.from(document.querySelectorAll('.nv-table tbody tr'));
+
+            // Filter
+            rows.forEach(function (tr) {
+                var show = true;
+                if (s.nganh && tr.dataset.nganh !== s.nganh) show = false;
+                if (s.tohop && tr.dataset.tohop !== s.tohop) show = false;
+                tr.style.display = show ? '' : 'none';
+            });
+
+            // Sort
+            if (s.sort) {
+                var visible = rows.filter(r => r.style.display !== 'none');
+                visible.sort(function (a, b) {
+                    return s.sort === 'asc'
+                        ? a.dataset.diem - b.dataset.diem
+                        : b.dataset.diem - a.dataset.diem;
+                });
+                var tbody = document.querySelector('.nv-table tbody');
+                visible.forEach(function (tr) { tbody.appendChild(tr); });
+            }
+
+            fnvRenderTags();
+
+            // Cập nhật trạng thái nút phễu
+            var hasFilter = s.nganh || s.tohop || s.sort;
+            document.getElementById('btnFilterNV').classList.toggle('active', !!hasFilter);
+        }
+
+        function fnvRenderTags() {
+            var s   = window._fnvState;
+            var row = document.getElementById('filterTagRow');
+            row.innerHTML = '';
+
+            function makeTag(label, onClear) {
+                var span = document.createElement('span');
+                span.className = 'filter-tag-nv';
+                span.innerHTML = label + ' <button aria-label="Xóa">&times;</button>';
+                span.querySelector('button').onclick = onClear;
+                row.appendChild(span);
+            }
+
+            if (s.nganh) makeTag('Ngành: ' + s.nganh, function () {
+                s.nganh = ''; document.getElementById('fnvNganh').value = ''; fnvRender();
+            });
+            if (s.tohop) makeTag('Tổ hợp: ' + s.tohop, function () {
+                s.tohop = ''; document.getElementById('fnvToHop').value = ''; fnvRender();
+            });
+            if (s.sort) makeTag('Điểm: ' + (s.sort === 'asc' ? 'Tăng dần' : 'Giảm dần'), function () {
+                s.sort = null; fnvRender();
+            });
+            row.style.display = (s.nganh || s.tohop || s.sort) ? 'flex' : 'none';
+            row.style.margin  = (s.nganh || s.tohop || s.sort) ? '8px 0 10px' : '0';
+        }
+    })();
+
+    // ── Gộp ô Ngoại Ngữ ──
+    document.addEventListener('DOMContentLoaded', function () {
+        var allCards = document.querySelectorAll('.score-section .score-card');
+        var nnCard = null, nnCcCard = null;
+        var nnValEl = null, nnCcValEl = null;
+
+        allCards.forEach(function (card) {
+            var label = card.querySelector('.score-label');
+            if (!label) return;
+            // Chuẩn hóa: bỏ dấu cách thừa, uppercase
+            var text = label.textContent.trim().toUpperCase();
+
+            // CC phải check TRƯỚC để không bị nhầm với ô NGOẠI NGỮ thường
+            if (text.includes('CC')) {
+                nnCcCard  = card;
+                nnCcValEl = card.querySelector('.score-value');
+            } else if (text.includes('NGO') && (text.includes('NG') || text.includes('NGU'))) {
+                nnCard   = card;
+                nnValEl  = card.querySelector('.score-value');
+            }
+        });
+
+        if (nnValEl && nnCcValEl) {
+            var dThi = parseFloat(nnValEl.textContent.trim())   || 0;
+            var dCc  = parseFloat(nnCcValEl.textContent.trim()) || 0;
+            var best = Math.max(dThi, dCc);
+
+            // Ghi điểm cao hơn vào ô Ngoại Ngữ
+            nnValEl.textContent = best % 1 === 0 ? best.toFixed(1) : best.toString();;
+
+            // Ẩn cột Ngoại Ngữ CC
+            var colCc = nnCcCard.closest('[class*="col-"]');
+            if (colCc) colCc.style.display = 'none';
+        }
+    });
+    /* ==================== TÍNH MĐƯT ==================== */
+    function tinhMDUT(doiTuong, khuVuc) {
+        doiTuong = (doiTuong || '').trim().toUpperCase();
+        khuVuc   = (khuVuc   || '').trim().toUpperCase();
+
+        var diemDT = 0;
+        if (['ĐT1','ĐT2','ĐT3','ĐT4','DT4','04','DT1','DT2','DT3','01','02','03'].some(function(v){ return doiTuong.includes(v); })) {
+            diemDT = 2.00;
+        } else if (['ĐT7','ĐT5','ĐT6','DT7','DT5','DT6','07','05','06'].some(function(v){ return doiTuong.includes(v); })) {
+            diemDT = 1.00;
+        }
+
+        var diemKV = 0;
+        if      (khuVuc.includes('KV1')  && !khuVuc.includes('KV2') && !khuVuc.includes('KV3')) diemKV = 0.75;
+        else if (khuVuc.includes('2-NT') || khuVuc.includes('2NT'))  diemKV = 0.50;
+        else if (khuVuc.includes('KV2')  && !khuVuc.includes('KV3')) diemKV = 0.25;
+        else if (khuVuc.includes('KV3'))                              diemKV = 0.00;
+
+        return diemDT + diemKV;
     }
 </script>
 </body>

@@ -1,6 +1,11 @@
 package com.sgu.tuyensinh.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "xt_nganh_tohop")
@@ -15,6 +20,9 @@ public class ToHopMonThi {
 
     @Column(name = "matohop")
     private String maToHop;
+
+    @Column(name = "dolech")
+    private Double doLech;
 
     // Tên môn (VD: TO, LI, HO, VA)
     @Column(name = "th_mon1") private String thMon1;
@@ -79,6 +87,7 @@ public class ToHopMonThi {
     public void setHsMon3(Double hsMon3) {
         this.hsMon3 = hsMon3;
     }
-
-    
+    public Double getDoLech() { return doLech; }
+    public void setDoLech(Double doLech) { this.doLech = doLech; }
+        
 }

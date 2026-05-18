@@ -12,11 +12,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.imageio.ImageIO;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,18 +26,19 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.sgu.tuyensinh.model.DiemThiSinh;
+import com.sgu.tuyensinh.model.GiaiThuong;
 import com.sgu.tuyensinh.model.Nganh;
 import com.sgu.tuyensinh.model.NguyenVongXetTuyen;
 import com.sgu.tuyensinh.model.ThiSinh;
 import com.sgu.tuyensinh.model.ToHopMonThi;
 import com.sgu.tuyensinh.repository.DiemThiSinhRepository;
+import com.sgu.tuyensinh.repository.GiaiThuongRepository;
 import com.sgu.tuyensinh.repository.NganhRepository;
 import com.sgu.tuyensinh.repository.ToHopMonThiRepository;
 import com.sgu.tuyensinh.service.TinhDiemService;
 import com.sgu.tuyensinh.service.TuyensinhService;
 
 import jakarta.servlet.http.HttpSession;
-import javax.imageio.ImageIO;
 
 @Controller
 public class WebController {
@@ -54,6 +57,9 @@ public class WebController {
 
     @Autowired
     private TinhDiemService tinhDiemService;
+
+    @Autowired
+    private GiaiThuongRepository giaiThuongRepository;
 
     // 1. KHI NGƯỜI DÙNG GÕ localhost:8080/login -> HIỆN TRANG ĐĂNG NHẬP
     @GetMapping("/login")
@@ -212,11 +218,8 @@ public String hienThiTrangKetQua(HttpSession session, Model model,
         String toHopGoc = (nganh != null && nganh.getToHopGoc() != null)
                           ? nganh.getToHopGoc()
                           : nv.getTtThm();
-
-        String toHopThi = nv.getTtThm() != null ? nv.getTtThm().trim().toUpperCase() : "";
-        String toHopGocStr = toHopGoc.trim().toUpperCase();
-
-        double mucDoLech = getMucDoLech(toHopGocStr, toHopThi);
+                          
+        double mucDoLech = getMucDoLech(nv.getNvMaNganh(), nv.getTtThm());
         double diemThgxtTinh = lamTron2(diemThxt - mucDoLech);
 
         map.put("toHopGoc",   toHopGoc);
@@ -231,8 +234,21 @@ public String hienThiTrangKetQua(HttpSession session, Model model,
         // "XÉT THPT", "ĐÁNH GIÁ V-SAT", "ĐGNL HCM"
         boolean isDGNL = pt.contains("DGNL") || pt.contains("ĐGNL");
         boolean isVSAT = pt.contains("V-SAT") || pt.contains("VSAT");
+        boolean isTuyenThang = pt.contains("TUYỂN THẲNG") || pt.contains("TUYEN THANG");
 
-        if (!isDGNL) {
+        if (isTuyenThang) {
+            // Lấy danh sách giải thưởng theo cccd
+            List<GiaiThuong> dsGiai = giaiThuongRepository.findByCccd(
+                d != null ? d.getCccd() : ""
+            );
+            map.put("danhSachMonJson",  "[]");
+            map.put("danhSachGiaiJson", buildGiaiThuongJson(dsGiai));
+            map.put("mocQuyDoi",        "");
+            map.put("congThucTongQuat", "");
+            map.put("congThucThaySo",   "");
+            map.put("ghiChu",           "");
+            map.put("diemDauVao",       0.0);
+        } else if (!isDGNL) {
             if (isVSAT) {
                 map.put("danhSachMonJson", buildMonJsonVSAT(nv.getNvMaNganh(), nv.getTtThm(), d));
             } else {
@@ -257,7 +273,7 @@ public String hienThiTrangKetQua(HttpSession session, Model model,
             map.put("congThucThaySo",   ct.getCongThucThaySo()   != null ? ct.getCongThucThaySo()   : "");
             map.put("ghiChu",           ct.getGhiChu()           != null ? ct.getGhiChu()           : "");
         }
-        return map;
+    return map;
     }
 
     // ══════════════════════════════════════════════
@@ -266,36 +282,45 @@ public String hienThiTrangKetQua(HttpSession session, Model model,
     private String buildMonJson(String maNganh, String toHop, DiemThiSinh d) {
         if (d == null || toHop == null || maNganh == null) return "[]";
 
-        // Bảng xt_nganh_tohop chỉ lưu mã gốc, không có -CLC
         String maNganhGoc = maNganh.replaceAll("(?i)-CLC.*$", "").trim();
-
-        // Tìm theo ngành + tổ hợp từ DB
         ToHopMonThi th = toHopRepository.findByMaNganhAndMaToHop(maNganhGoc, toHop);
 
         if (th == null) {
-            // Không có trong DB → trả về JSON báo lỗi để JS hiển thị thông báo
             return "{\"error\":\"Không tìm thấy tổ hợp " + toHop + " cho ngành " + maNganh + " trong hệ thống\"}";
         }
 
-        return toJson(
-            th.getThMon1(), getDiemTheoMa(th.getThMon1(), d), th.getHsMon1().intValue(),
-            th.getThMon2(), getDiemTheoMa(th.getThMon2(), d), th.getHsMon2().intValue(),
-            th.getThMon3(), getDiemTheoMa(th.getThMon3(), d), th.getHsMon3().intValue()
-        );
-    }
+        String[] maMons = { th.getThMon1(), th.getThMon2(), th.getThMon3() };
+        int[]    heSos  = { th.getHsMon1().intValue(), th.getHsMon2().intValue(), th.getHsMon3().intValue() };
 
-    private String toJson(String t1, Double d1, int h1,
-                        String t2, Double d2, int h2,
-                        String t3, Double d3, int h3) {
-        // Dùng &quot; thay cho " để không vỡ HTML attribute
-        return String.format(
-            "[{&quot;ten&quot;:&quot;%s&quot;,&quot;diem&quot;:%s,&quot;heSo&quot;:%d},"
-        + "{&quot;ten&quot;:&quot;%s&quot;,&quot;diem&quot;:%s,&quot;heSo&quot;:%d},"
-        + "{&quot;ten&quot;:&quot;%s&quot;,&quot;diem&quot;:%s,&quot;heSo&quot;:%d}]",
-            t1, d1 != null ? d1 : 0, h1,
-            t2, d2 != null ? d2 : 0, h2,
-            t3, d3 != null ? d3 : 0, h3
-        );
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < 3; i++) {
+            String maMon = maMons[i];
+            boolean isNN = isNgoaiNgu(maMon);
+
+            Double diemThi = isNN ? d.getNgoaiNguThi() : null;
+            Double diemCc  = isNN ? d.getNgoaiNguCc()  : null;
+            Double diem    = getDiemTheoMa(maMon, d);
+
+            if (i > 0) sb.append(",");
+            sb.append("{");
+            sb.append("&quot;ten&quot;:&quot;").append(maMon).append("&quot;,");
+            sb.append("&quot;diem&quot;:").append(diem != null ? fmt(diem) : "0").append(",");
+            sb.append("&quot;heSo&quot;:").append(heSos[i]).append(",");
+            sb.append("&quot;isNgoaiNgu&quot;:").append(isNN).append(",");
+            if (isNN) {
+                sb.append("&quot;diemThi&quot;:").append(diemThi != null ? fmt(diemThi) : "null").append(",");
+                sb.append("&quot;diemCc&quot;:").append(diemCc  != null ? fmt(diemCc)  : "null").append(",");
+                boolean ccWins = (diemCc != null) && (diemThi == null || diemCc > diemThi);
+                sb.append("&quot;ccDuocChon&quot;:").append(ccWins);
+            } else {
+                sb.append("&quot;diemThi&quot;:null,");
+                sb.append("&quot;diemCc&quot;:null,");
+                sb.append("&quot;ccDuocChon&quot;:false");
+            }
+            sb.append("}");
+        }
+        sb.append("]");
+        return sb.toString();
     }
 
     private String buildMonJsonVSAT(String maNganh, String toHop, DiemThiSinh d) {
@@ -348,6 +373,27 @@ public String hienThiTrangKetQua(HttpSession session, Model model,
         return sb.toString();
     }
 
+    private String buildGiaiThuongJson(List<GiaiThuong> list) {
+        if (list == null || list.isEmpty()) return "[]";
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < list.size(); i++) {
+            GiaiThuong g = list.get(i);
+            if (i > 0) sb.append(",");
+            sb.append("{")
+            .append("\"capGiai\":\"").append(escapeJson(g.getCapGiai())).append("\",")
+            .append("\"doiTuong\":\"").append(escapeJson(g.getDoiTuong())).append("\",")
+            .append("\"maMon\":\"").append(escapeJson(g.getMaMon())).append("\",")
+            .append("\"loaiGiai\":\"").append(escapeJson(g.getLoaiGiai())).append("\",")
+            .append("\"diemCongCoMon\":").append(g.getDiemCongCoMon() != null ? g.getDiemCongCoMon() : 0).append(",")
+            .append("\"diemCongKhongMon\":").append(g.getDiemCongKhongMon() != null ? g.getDiemCongKhongMon() : 0)
+            .append("}");
+        }
+        sb.append("]");
+        return java.util.Base64.getEncoder().encodeToString(
+            sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)
+        );
+    }
+
     private Double getDiemTheoMa(String maMon, DiemThiSinh d) {
         if (maMon == null || d == null) return null;
         switch (maMon.trim().toUpperCase()) {
@@ -371,84 +417,14 @@ public String hienThiTrangKetQua(HttpSession session, Model model,
         }
     }
 
-    private static final Map<String, Map<String, Double>> BANG_DO_LECH;
-    static {
-        BANG_DO_LECH = new LinkedHashMap<>();
+    private double getMucDoLech(String maNganh, String toHopThi) {
+        if (maNganh == null || toHopThi == null) return 0.0;
 
-        // Hàng A00 (tổ hợp gốc = A00)
-        Map<String, Double> a00 = new LinkedHashMap<>();
-        a00.put("A00",  0.00);
-        a00.put("A01", -0.69);
-        a00.put("B00", -1.21);
-        a00.put("C00", +2.32);
-        a00.put("C01", +0.94);
-        a00.put("D01", -0.68);
-        a00.put("D07", -1.62);
-        BANG_DO_LECH.put("A00", a00);
-
-        // Hàng A01
-        Map<String, Double> a01 = new LinkedHashMap<>();
-        a01.put("A00", +0.69);
-        a01.put("A01",  0.00);
-        a01.put("B00", -0.52);
-        a01.put("C00", +3.01);
-        a01.put("C01", +1.63);
-        a01.put("D01", +0.01);
-        a01.put("D07", -0.93);
-        BANG_DO_LECH.put("A01", a01);
-
-        // Hàng B00
-        Map<String, Double> b00 = new LinkedHashMap<>();
-        b00.put("A00", +1.21);
-        b00.put("A01", +0.52);
-        b00.put("B00",  0.00);
-        b00.put("C00", +3.53);
-        b00.put("C01", +2.15);
-        b00.put("D01", +0.53);
-        b00.put("D07", -0.41);
-        BANG_DO_LECH.put("B00", b00);
-
-        // Hàng C00
-        Map<String, Double> c00 = new LinkedHashMap<>();
-        c00.put("A00", -2.32);
-        c00.put("A01", -3.01);
-        c00.put("B00", -3.53);
-        c00.put("C00",  0.00);
-        c00.put("C01", -1.38);
-        c00.put("D01", -3.00);
-        c00.put("D07", -3.94);
-        BANG_DO_LECH.put("C00", c00);
-
-        // Hàng C01
-        Map<String, Double> c01 = new LinkedHashMap<>();
-        c01.put("A00", -0.94);
-        c01.put("A01", -1.63);
-        c01.put("B00", -2.15);
-        c01.put("C00", +1.38);
-        c01.put("C01",  0.00);
-        c01.put("D01", -1.62);
-        c01.put("D07", -2.56);
-        BANG_DO_LECH.put("C01", c01);
-
-        // Hàng D01
-        Map<String, Double> d01 = new LinkedHashMap<>();
-        d01.put("A00", +0.68);
-        d01.put("A01", -0.01);
-        d01.put("B00", -0.53);
-        d01.put("C00", +3.00);
-        d01.put("C01", +1.62);
-        d01.put("D01",  0.00);
-        d01.put("D07", -0.94);
-        BANG_DO_LECH.put("D01", d01);
-    }
-
-    private double getMucDoLech(String toHopGoc, String toHopThi) {
-        if (toHopGoc == null || toHopThi == null) return 0.0;
-        String goc = toHopGoc.trim().toUpperCase();
-        String thi = toHopThi.trim().toUpperCase();
-        Map<String, Double> hang = BANG_DO_LECH.get(goc);
-        if (hang == null) return 0.0;
-        return hang.getOrDefault(thi, 0.0);
+        String maNganhGoc = maNganh.replaceAll("(?i)-CLC.*$", "").trim();
+        ToHopMonThi row = toHopRepository.findByMaNganhAndMaToHop(maNganhGoc, toHopThi.trim().toUpperCase());
+        
+        if (row == null || row.getDoLech() == null) return 0.0;
+        return row.getDoLech();
     }
 
     private double lamTron2(double v) {
@@ -459,4 +435,20 @@ public String hienThiTrangKetQua(HttpSession session, Model model,
         return String.format("%.2f", value);
     }
 
+    private String escapeJson(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r");
+    }
+
+    // Helper nhận diện môn ngoại ngữ
+    private boolean isNgoaiNgu(String maMon) {
+        if (maMon == null) return false;
+        switch (maMon.trim().toUpperCase()) {
+            case "AN": case "ANH": case "N1": return true;
+            default: return false;
+        }
+    }
 }
