@@ -28,6 +28,15 @@ public class Nganh {
     @Column(name = "n_diemsanvsat")
     private Double diemSanVsat;
 
+    @Column(name = "diemchuan_thpt")
+    private Double diemChuanThpt;
+
+    @Column(name = "diemchuan_dgnl")
+    private Double diemChuanDgnl;
+
+    @Column(name = "diemchuan_vsat")
+    private Double diemChuanVsat;
+
     // Getters và Setters
     public String getMaNganh() { return maNganh; }
     public void setMaNganh(String maNganh) { this.maNganh = maNganh; }
@@ -46,4 +55,13 @@ public class Nganh {
 
     public Double getDiemSanVsat() { return diemSanVsat; }
     public void setDiemSanVsat(Double diemSanVsat) { this.diemSanVsat = diemSanVsat; }
+
+    public Double getDiemChuanThpt() { return diemChuanThpt; }
+    public void setDiemChuanThpt(Double diemChuanThpt) { this.diemChuanThpt = diemChuanThpt; }
+
+    public Double getDiemChuanDgnl() { return diemChuanDgnl; }
+    public void setDiemChuanDgnl(Double diemChuanDgnl) { this.diemChuanDgnl = diemChuanDgnl; }
+
+    public Double getDiemChuanVsat() { return diemChuanVsat; }
+    public void setDiemChuanVsat(Double diemChuanVsat) { this.diemChuanVsat = diemChuanVsat; }
 }

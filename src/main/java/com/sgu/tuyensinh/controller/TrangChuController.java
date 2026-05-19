@@ -93,10 +93,15 @@ public class TrangChuController {
             model.addAttribute("maNganhHienThi", maNganhChuan);
         }
         Double diemSan = null;
+        Double diemChuan = null;
         if (nganhThongTin != null) {
             if ("THPT".equalsIgnoreCase(phuongThuc)) diemSan = nganhThongTin.getDiemSanThpt();
             else if ("VSAT".equalsIgnoreCase(phuongThuc)) diemSan = nganhThongTin.getDiemSanVsat();
             else if ("DGNL".equalsIgnoreCase(phuongThuc)) diemSan = nganhThongTin.getDiemSanDgnl();
+
+            if ("THPT".equalsIgnoreCase(phuongThuc)) diemChuan = nganhThongTin.getDiemChuanThpt();
+            else if ("VSAT".equalsIgnoreCase(phuongThuc)) diemChuan = nganhThongTin.getDiemChuanVsat();
+            else if ("DGNL".equalsIgnoreCase(phuongThuc)) diemChuan = nganhThongTin.getDiemChuanDgnl();
         }
 
 
@@ -133,9 +138,12 @@ public class TrangChuController {
             double diemUuTienSauDieuChinh = tinhDiemUuTienSauDieuChinh(diemNenCong, diemUuTienGoc);
             double tongDiemXetTuyen = diemNenCong + diemUuTienSauDieuChinh;
 
-                    // So sánh và đẩy điểm sàn ra
-            model.addAttribute("diemSan", diemSan);
-            model.addAttribute("datDiemSan", (diemSan == null || tongDiemXetTuyen >= diemSan));
+                double tongDiemXetTuyenLamTron = lamTron2So(tongDiemXetTuyen);
+                tongDiemXetTuyenLamTron = Math.min(30.0, tongDiemXetTuyenLamTron);
+
+                // So sánh và đẩy điểm chuẩn ra
+                model.addAttribute("diemChuan", diemChuan);
+                model.addAttribute("datDiemChuan", (diemChuan == null || tongDiemXetTuyenLamTron >= diemChuan));
             model.addAttribute("chiTietDGNL", chiTietDGNL);
             model.addAttribute("diemDGNLNhapLamTron", lamTron2So(diemDGNL));
             model.addAttribute("diemNenXetTuyen", lamTron2So(diemNenXetTuyen));
@@ -144,10 +152,10 @@ public class TrangChuController {
             model.addAttribute("diemDoiTuong", lamTron2So(diemDoiTuong));
             model.addAttribute("diemUuTienGoc", lamTron2So(diemUuTienGoc));
             model.addAttribute("diemUuTienSauDieuChinh", lamTron2So(diemUuTienSauDieuChinh));
-            model.addAttribute("tongDiemXetTuyen", lamTron2So(tongDiemXetTuyen));
-            model.addAttribute("congThucDiemUuTien", taoCongThucDiemUuTien(diemNenCong, diemUuTienGoc, diemUuTienSauDieuChinh));
+                model.addAttribute("tongDiemXetTuyen", tongDiemXetTuyenLamTron);
+            model.addAttribute("congThucDiemUuTien", taoCongThucDiemUuTien(diemNenXetTuyen, diemCong, diemUuTienGoc, diemUuTienSauDieuChinh));
             model.addAttribute("kieuKetQua", "DGNL");
-            model.addAttribute("tongDiem", lamTron2So(tongDiemXetTuyen)); // Giữ biến tongDiem để hiển thị khối KQ
+                model.addAttribute("tongDiem", tongDiemXetTuyenLamTron); // Giữ biến tongDiem để hiển thị khối KQ
             
             return "tinhdiem";
         }
@@ -209,6 +217,9 @@ public class TrangChuController {
             double diemUuTienSauDieuChinh = tinhDiemUuTienSauDieuChinh(diemNenCong, diemUuTienGoc);
             double tongDiemXetTuyen = diemNenCong + diemUuTienSauDieuChinh;
 
+            double tongDiemXetTuyenLamTron = lamTron2So(tongDiemXetTuyen);
+            tongDiemXetTuyenLamTron = Math.min(30.0, tongDiemXetTuyenLamTron);
+
             // Gom TẤT CẢ thông tin của tổ hợp này vào một cái Map để gửi ra giao diện
             Map<String, Object> kqToHop = new HashMap<>();
             kqToHop.put("maToHop", th.getMaToHop());
@@ -220,14 +231,14 @@ public class TrangChuController {
             kqToHop.put("congThucTongDiem", String.format("(%s x %s) + (%s x %s) + (%s x %s) = %s", fmt(diemQuyDoi1), fmt(th.getHsMon1()), fmt(diemQuyDoi2), fmt(th.getHsMon2()), fmt(diemQuyDoi3), fmt(th.getHsMon3()), fmt(tongDiem)));
             kqToHop.put("congThucTongHeSo", String.format("%s + %s + %s = %s", fmt(th.getHsMon1()), fmt(th.getHsMon2()), fmt(th.getHsMon3()), fmt(tongHeSo)));
             kqToHop.put("congThucQuyVe30", String.format("(%s / %s) x 3 = %s", fmt(tongDiem), fmt(tongHeSo), fmt(tongDiemQuyVeThang30)));
-            kqToHop.put("congThucDiemUuTien", taoCongThucDiemUuTien(diemNenCong, diemUuTienGoc, diemUuTienSauDieuChinh));
+            kqToHop.put("congThucDiemUuTien", taoCongThucDiemUuTien(diemNenXetTuyen, diemCong, diemUuTienGoc, diemUuTienSauDieuChinh));
             
             kqToHop.put("diemNenXetTuyen", lamTron2So(diemNenXetTuyen));
             kqToHop.put("diemUuTienSauDieuChinh", lamTron2So(diemUuTienSauDieuChinh));
-            kqToHop.put("tongDiemXetTuyen", lamTron2So(tongDiemXetTuyen)); // Điểm chốt hạ
-            
-            kqToHop.put("diemSan", diemSan);
-            kqToHop.put("datDiemSan", (diemSan == null || tongDiemXetTuyen >= diemSan));
+            kqToHop.put("tongDiemXetTuyen", tongDiemXetTuyenLamTron); // Điểm chốt hạ
+
+            kqToHop.put("diemChuan", diemChuan);
+            kqToHop.put("datDiemChuan", (diemChuan == null || tongDiemXetTuyenLamTron >= diemChuan));
 
             ketQuaTatCaToHop.add(kqToHop);
         }
@@ -330,18 +341,19 @@ public class TrangChuController {
         return lamTron2So(diemUuTienGoc * heSoDieuChinh);
     }
 
-    private String taoCongThucDiemUuTien(double diemNenCong, double diemUuTienGoc, double diemUuTienSauDieuChinh) {
+    private String taoCongThucDiemUuTien(double diemNenXetTuyen, double diemCong, double diemUuTienGoc, double diemUuTienSauDieuChinh) {
+        double diemNenCong = diemNenXetTuyen + diemCong;
         if (diemUuTienGoc <= 0) {
             return "Không có điểm ưu tiên nên điểm ưu tiên áp dụng = 0.00";
         }
         if (diemNenCong < 22.5) {
-            return String.format("Vì %s < 22.50 nên cộng ưu tiên bình thường: %s",
-                    fmt(diemNenCong), fmt(diemUuTienSauDieuChinh));
+            return String.format("Vì (%s + %s) = %s < 22.50 nên cộng ưu tiên bình thường: %s",
+                    fmt(diemNenXetTuyen), fmt(diemCong), fmt(diemNenCong), fmt(diemUuTienSauDieuChinh));
         }
 
         double heSoDieuChinh = Math.max(0.0, (30.0 - diemNenCong) / 7.5);
-        return String.format("Điểm ưu tiên điều chỉnh = ((30 - %s) / 7.5) x %s = %s",
-                fmt(diemNenCong), fmt(diemUuTienGoc), fmt(heSoDieuChinh * diemUuTienGoc));
+        return String.format("Điểm ưu tiên điều chỉnh = ((30 - %s - %s) / 7.5) x %s = %s",
+                fmt(diemNenXetTuyen), fmt(diemCong), fmt(diemUuTienGoc), fmt(heSoDieuChinh * diemUuTienGoc));
     }
 
     private String fmt(Double value) {

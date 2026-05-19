@@ -261,14 +261,33 @@
                                     <option value="DGNL" ${phuongThucNhap == 'DGNL' ? 'selected' : ''}>Xét tuyển ĐGNL</option>
                                 </select>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold" style="color: var(--brand-1);">Mã Ngành Xét Tuyển</label>
-                                <div class="input-group">
-                                    <input type="text" class="form-control" id="maNganhDisplay" value="${maNganhHienThi}" placeholder="VD: 7480201" readonly required>
-                                    <input type="hidden" id="maNganhInput" name="maNganh" value="${maNganhNhap}">
-                                    <button type="button" class="btn btn-outline-primary" style="border-radius: 12px;" data-bs-toggle="modal" data-bs-target="#modalChonMaNganh">Chọn</button>
-                                </div>
-                            </div>
+<div class="col-md-6">
+    <label class="form-label fw-bold" style="color: var(--brand-1);">
+        Mã Ngành Xét Tuyển
+    </label>
+
+    <div class="input-group">
+        <input type="text"
+               class="form-control rounded-4"
+               id="maNganhDisplay"
+               value="${maNganhHienThi}"
+               placeholder="VD: 7480201"
+               readonly required>
+
+        <input type="hidden"
+               id="maNganhInput"
+               name="maNganh"
+               value="${maNganhNhap}">
+
+        <button type="button"
+                class="btn btn-outline-primary ms-2 px-4 py-2"
+                style="border-radius: 14px;"
+                data-bs-toggle="modal"
+                data-bs-target="#modalChonMaNganh">
+            Chọn
+        </button>
+    </div>
+</div>
                         </div>
 
 
@@ -379,6 +398,7 @@
                                     <div class="formula-title">Điểm cộng và ưu tiên</div>
                                     <div>Điểm nền xét tuyển: <strong>${diemNenXetTuyen}</strong></div>
                                     <div>Điểm ưu tiên gốc: <strong>${diemUuTienGoc}</strong></div>
+                                    <div>Ưu tiên khu vực/đối tượng: <strong>${diemKhuVuc} / ${diemDoiTuong}</strong></div>
                                     <span class="formula-code">${congThucDiemUuTien}</span>
                                     <div>Điểm ưu tiên áp dụng: <strong>${diemUuTienSauDieuChinh}</strong></div>
                                     
@@ -396,17 +416,17 @@
                                 </div>
                                 <div class="mt-4 text-center">
                                     <div style="font-size: 1.1rem; color: var(--muted); margin-bottom: 8px;">
-                                        Điểm sàn yêu cầu: <strong style="color: var(--ink);">${diemSan != null ? diemSan : 'Chưa công bố'}</strong>
+                                        Điểm chuẩn yêu cầu: <strong style="color: var(--ink);">${diemChuan != null ? diemChuan : 'Chưa công bố'}</strong>
                                     </div>
                                     <c:choose>
-                                        <c:when test="${diemSan == null}">
-                                            <span class="badge bg-secondary fs-6 px-4 py-2 rounded-pill shadow-sm">ĐANG CẬP NHẬT ĐIỂM SÀN</span>
+                                        <c:when test="${diemChuan == null}">
+                                            <span class="badge bg-secondary fs-6 px-4 py-2 rounded-pill shadow-sm">CHƯA CÔNG BỐ</span>
                                         </c:when>
-                                        <c:when test="${datDiemSan}">
-                                            <span class="badge bg-success fs-5 px-4 py-2 rounded-pill shadow-sm" style="background: linear-gradient(45deg, #10b981, #059669) !important;">🎉 ĐỦ ĐIỀU KIỆN ĐIỂM SÀN</span>
+                                        <c:when test="${datDiemChuan}">
+                                            <span class="badge bg-success fs-5 px-4 py-2 rounded-pill shadow-sm" style="background: linear-gradient(45deg, #10b981, #059669) !important;">🎉 ĐỦ ĐIỀU KIỆN ĐIỂM CHUẨN</span>
                                         </c:when>
                                         <c:otherwise>
-                                            <span class="badge bg-danger fs-5 px-4 py-2 rounded-pill shadow-sm" style="background: linear-gradient(45deg, #ef4444, #dc2626) !important;">❌ KHÔNG ĐẠT ĐIỂM SÀN</span>
+                                            <span class="badge bg-danger fs-5 px-4 py-2 rounded-pill shadow-sm" style="background: linear-gradient(45deg, #ef4444, #dc2626) !important;">❌ KHÔNG ĐẠT ĐIỂM CHUẨN</span>
                                         </c:otherwise>
                                     </c:choose>
                                 </div>
@@ -527,17 +547,17 @@
                                             </div>
                                             <div class="mt-4 text-center">
                                                 <div style="font-size: 1.1rem; color: var(--muted); margin-bottom: 8px;">
-                                                    Điểm sàn yêu cầu: <strong style="color: var(--ink);">${kq.diemSan != null ? kq.diemSan : 'Chưa công bố'}</strong>
+                                                    Điểm chuẩn yêu cầu: <strong style="color: var(--ink);">${kq.diemChuan != null ? kq.diemChuan : 'Chưa công bố'}</strong>
                                                 </div>
                                                 <c:choose>
-                                                    <c:when test="${kq.diemSan == null}">
-                                                        <span class="badge bg-secondary fs-6 px-4 py-2 rounded-pill shadow-sm">ĐANG CẬP NHẬT ĐIỂM SÀN</span>
+                                                    <c:when test="${kq.diemChuan == null}">
+                                                        <span class="badge bg-secondary fs-6 px-4 py-2 rounded-pill shadow-sm">CHƯA CÔNG BỐ</span>
                                                     </c:when>
-                                                    <c:when test="${kq.datDiemSan}">
-                                                        <span class="badge bg-success fs-5 px-4 py-2 rounded-pill shadow-sm" style="background: linear-gradient(45deg, #10b981, #059669) !important;">ĐỦ ĐIỀU KIỆN ĐIỂM SÀN</span>
+                                                    <c:when test="${kq.datDiemChuan}">
+                                                        <span class="badge bg-success fs-5 px-4 py-2 rounded-pill shadow-sm" style="background: linear-gradient(45deg, #10b981, #059669) !important;">ĐỦ ĐIỀU KIỆN ĐIỂM CHUẨN</span>
                                                     </c:when>
                                                     <c:otherwise>
-                                                        <span class="badge bg-danger fs-5 px-4 py-2 rounded-pill shadow-sm" style="background: linear-gradient(45deg, #ef4444, #dc2626) !important;">KHÔNG ĐẠT ĐIỂM SÀN</span>
+                                                        <span class="badge bg-danger fs-5 px-4 py-2 rounded-pill shadow-sm" style="background: linear-gradient(45deg, #ef4444, #dc2626) !important;">KHÔNG ĐẠT ĐIỂM CHUẨN</span>
                                                     </c:otherwise>
                                                 </c:choose>
                                             </div>
@@ -587,16 +607,17 @@
                                             <table class="table table-hover align-middle mb-0">
                                                 <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
                                                     <tr>
-                                                        <th style="width: 28%;">Mã ngành</th>
-                                                        <th style="width: 52%;">Tên ngành</th>
-                                                        <th class="text-end" style="width: 20%;">Thao tác</th>
+                                                        <th style="width: 24%;">Mã ngành</th>
+                                                        <th style="width: 48%;">Tên ngành</th>
+                                                        <th style="width: 12%;">Tổ hợp gốc</th>
+                                                        <th class="text-end" style="width: 16%;">Thao tác</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody id="nganhTableBody">
                                                     <c:choose>
                                                         <c:when test="${empty dsNganh}">
                                                             <tr>
-                                                                <td colspan="3" class="text-center text-muted py-4">Không có dữ liệu mã ngành</td>
+                                                                <td colspan="4" class="text-center text-muted py-4">Không có dữ liệu mã ngành</td>
                                                             </tr>
                                                         </c:when>
                                                         <c:otherwise>
@@ -604,6 +625,7 @@
                                                                 <tr class="nganh-row" data-ma="${n.maNganh}" data-ten="${n.tenNganh}">
                                                                     <td class="fw-bold">${n.maNganh}</td>
                                                                     <td>${n.tenNganh}</td>
+                                                                    <td>${n.toHopGoc != null ? n.toHopGoc : '-'}</td>
                                                                     <td class="text-end">
                                                                         <button type="button" class="btn btn-sm btn-outline-primary btn-chon-nganh">Chọn</button>
                                                                     </td>
