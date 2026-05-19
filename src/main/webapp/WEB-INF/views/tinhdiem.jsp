@@ -247,7 +247,7 @@
                 <div class="card-body p-4 p-md-5">
                     
                     <c:if test="${not empty error}">
-                        <div class="alert alert-danger rounded-3 border-0 shadow-sm" role="alert">${error}</div>
+                        <div class="alert alert-danger rounded-3 border-0 shadow-sm" role="alert" id="errorBox">${error}</div>
                     </c:if>
 
                     <form action="/tinh-diem" method="post" id="formTinhDiem">
@@ -331,6 +331,52 @@
                                 <label class="form-label fw-bold text-dark">Địa Lý</label>
                                 <input type="number" step="0.01" class="form-control input-mon" name="diemDia" value="${dDia}">
                             </div>
+
+                            <div class="col-12" id="nhomDiemTHPTMoRong" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-3 col-6 mb-3 thpt-mon-item" data-thpt-mon="CNCN" style="display: none;">
+                                        <label class="form-label fw-bold text-dark">CNCN</label>
+                                        <input type="number" step="0.01" class="form-control input-mon input-thpt" name="diemCNCN" value="${dCNCN}">
+                                    </div>
+                                    <div class="col-md-3 col-6 mb-3 thpt-mon-item" data-thpt-mon="CNNN" style="display: none;">
+                                        <label class="form-label fw-bold text-dark">CNNN</label>
+                                        <input type="number" step="0.01" class="form-control input-mon input-thpt" name="diemCNNN" value="${dCNNN}">
+                                    </div>
+                                    <div class="col-md-3 col-6 mb-3 thpt-mon-item" data-thpt-mon="TI" style="display: none;">
+                                        <label class="form-label fw-bold text-dark">Tin học</label>
+                                        <input type="number" step="0.01" class="form-control input-mon input-thpt" name="diemTI" value="${dTI}">
+                                    </div>
+                                    <div class="col-md-3 col-6 mb-3 thpt-mon-item" data-thpt-mon="KTPL" style="display: none;">
+                                        <label class="form-label fw-bold text-dark">KTPL</label>
+                                        <input type="number" step="0.01" class="form-control input-mon input-thpt" name="diemKTPL" value="${dKTPL}">
+                                    </div>
+
+                                    <div class="col-md-3 col-6 mb-3 thpt-mon-item" data-thpt-mon="NK1" style="display: none;">
+                                        <label class="form-label fw-bold text-dark">NK1</label>
+                                        <input type="number" step="0.01" class="form-control input-mon input-thpt" name="diemNK1" value="${dNK1}">
+                                    </div>
+                                    <div class="col-md-3 col-6 mb-3 thpt-mon-item" data-thpt-mon="NK2" style="display: none;">
+                                        <label class="form-label fw-bold text-dark">NK2</label>
+                                        <input type="number" step="0.01" class="form-control input-mon input-thpt" name="diemNK2" value="${dNK2}">
+                                    </div>
+                                    <div class="col-md-3 col-6 mb-3 thpt-mon-item" data-thpt-mon="NK3" style="display: none;">
+                                        <label class="form-label fw-bold text-dark">NK3</label>
+                                        <input type="number" step="0.01" class="form-control input-mon input-thpt" name="diemNK3" value="${dNK3}">
+                                    </div>
+                                    <div class="col-md-3 col-6 mb-3 thpt-mon-item" data-thpt-mon="NK4" style="display: none;">
+                                        <label class="form-label fw-bold text-dark">NK4</label>
+                                        <input type="number" step="0.01" class="form-control input-mon input-thpt" name="diemNK4" value="${dNK4}">
+                                    </div>
+                                    <div class="col-md-3 col-6 mb-3 thpt-mon-item" data-thpt-mon="NK5" style="display: none;">
+                                        <label class="form-label fw-bold text-dark">NK5</label>
+                                        <input type="number" step="0.01" class="form-control input-mon input-thpt" name="diemNK5" value="${dNK5}">
+                                    </div>
+                                    <div class="col-md-3 col-6 mb-3 thpt-mon-item" data-thpt-mon="NK6" style="display: none;">
+                                        <label class="form-label fw-bold text-dark">NK6</label>
+                                        <input type="number" step="0.01" class="form-control input-mon input-thpt" name="diemNK6" value="${dNK6}">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="mb-4" id="nhomDiemDGNL" style="display: none;">
@@ -374,7 +420,8 @@
                     </form>
 
                     <c:if test="${not empty tongDiem}">
-                        
+                        <div id="ketQuaContainer">
+
 <c:if test="${kieuKetQua == 'DGNL'}">
                             <div class="result-box mt-4">
                                 <h5 class="border-bottom pb-3 mb-3 fw-bold" style="color: var(--brand-1);">Kết Quả Quy Đổi ĐGNL</h5>
@@ -568,6 +615,7 @@
                             </div>
                         </c:if>
 
+                        </div>
                     </c:if>
 
                 </div>
@@ -649,12 +697,100 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    function resetDuLieuTinhDiem() {
+        const form = document.getElementById('formTinhDiem');
+        if (!form) return;
+
+        // Xóa hết điểm đã nhập (tất cả input number trong form)
+        form.querySelectorAll('input[type="number"]').forEach(input => {
+            input.value = '';
+        });
+
+        // Ẩn kết quả cũ (nếu đang hiển thị do server render)
+        const ketQua = document.getElementById('ketQuaContainer');
+        if (ketQua) ketQua.style.display = 'none';
+
+        // Ẩn thông báo lỗi cũ (nếu có)
+        const errorBox = document.getElementById('errorBox');
+        if (errorBox) errorBox.style.display = 'none';
+    }
+
+    function setNhomThptMoRongVisible(visible) {
+        const nhomDiemTHPTMoRong = document.getElementById('nhomDiemTHPTMoRong');
+        const inputsThpt = document.querySelectorAll('.input-thpt');
+        if (nhomDiemTHPTMoRong) nhomDiemTHPTMoRong.style.display = visible ? 'block' : 'none';
+        inputsThpt.forEach(input => input.disabled = !visible);
+    }
+
+    function apDungHienThiMonThptMoRong(monSet) {
+        const nhom = document.getElementById('nhomDiemTHPTMoRong');
+        const items = document.querySelectorAll('.thpt-mon-item[data-thpt-mon]');
+        const codes = ['CNCN', 'CNNN', 'TI', 'KTPL', 'NK1', 'NK2', 'NK3', 'NK4', 'NK5', 'NK6'];
+        const set = monSet || new Set();
+
+        // Toggle từng ô theo mã môn
+        items.forEach(item => {
+            const code = (item.getAttribute('data-thpt-mon') || '').toString().trim().toUpperCase();
+            const visible = set.has(code);
+            item.style.display = visible ? '' : 'none';
+
+            // Disable/enable input để không submit những môn không dùng
+            item.querySelectorAll('input,select,textarea').forEach(el => {
+                el.disabled = !visible;
+            });
+        });
+
+        // Nhóm chỉ hiện khi có ít nhất 1 môn hiếm cần nhập
+        const canShowGroup = codes.some(c => set.has(c));
+        if (nhom) nhom.style.display = canShowGroup ? 'block' : 'none';
+    }
+
+    function anHetMonThptMoRong() {
+        apDungHienThiMonThptMoRong(new Set());
+    }
+
+    async function capNhatNhomThptMoRongTheoNganh() {
+        const phuongThuc = document.getElementById('phuongThuc')?.value;
+        if (phuongThuc !== 'THPT') {
+            anHetMonThptMoRong();
+            return;
+        }
+
+        const maNganh = (document.getElementById('maNganhInput')?.value || '').trim();
+        if (!maNganh) {
+            anHetMonThptMoRong();
+            return;
+        }
+
+        // Mặc định ẩn trong lúc chờ API để tránh nhấp nháy.
+        anHetMonThptMoRong();
+
+        try {
+            const resp = await fetch('/api/nganh/mon-to-hop?maNganh=' + encodeURIComponent(maNganh), {
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (!resp.ok) {
+                anHetMonThptMoRong();
+                return;
+            }
+
+            const monList = await resp.json();
+            const monSet = new Set((Array.isArray(monList) ? monList : []).map(m => (m || '').toString().trim().toUpperCase()));
+            apDungHienThiMonThptMoRong(monSet);
+        } catch (e) {
+            anHetMonThptMoRong();
+        }
+    }
+
     function capNhatFormTheoPhuongThuc() {
         const phuongThuc = document.getElementById('phuongThuc').value;
         const nhomDiem8Mon = document.getElementById('nhomDiem8Mon');
+        const nhomDiemTHPTMoRong = document.getElementById('nhomDiemTHPTMoRong');
         const nhomDiemDGNL = document.getElementById('nhomDiemDGNL');
         const inputsMon = document.querySelectorAll('.input-mon');
         const diemDGNL = document.getElementById('diemDGNL');
+        const inputsThpt = document.querySelectorAll('.input-thpt');
 
         // Gắn mặc định min = 0 cho tất cả để chống nhập điểm âm
         inputsMon.forEach(input => input.min = 0);
@@ -664,6 +800,8 @@
             nhomDiem8Mon.style.display = 'none';
             nhomDiemDGNL.style.display = 'block';
             inputsMon.forEach(input => input.required = false);
+
+            anHetMonThptMoRong();
             
             diemDGNL.required = true;
             diemDGNL.max = 1200; // ĐGNL max là 1200
@@ -680,7 +818,9 @@
                 input.placeholder = 'Thang 10';
                 input.max = 10; // THPT max là 10
             });
+            capNhatNhomThptMoRongTheoNganh();
         } else { // Phương thức VSAT
+            anHetMonThptMoRong();
             inputsMon.forEach(input => {
                 input.placeholder = 'Thang 150';
                 input.max = 150; // VSAT max là 150
@@ -704,7 +844,10 @@
     });
 
     // Chạy các sự kiện khi load trang và khi đổi phương thức
-    document.getElementById('phuongThuc').addEventListener('change', capNhatFormTheoPhuongThuc);
+    document.getElementById('phuongThuc').addEventListener('change', () => {
+        resetDuLieuTinhDiem();
+        capNhatFormTheoPhuongThuc();
+    });
     capNhatFormTheoPhuongThuc(); // Khởi tạo lần đầu lúc mới vào trang
 
     // ----- Chọn mã ngành: search + phân trang (20 dòng / trang) -----
@@ -850,6 +993,9 @@
             if (!ma) return;
             maNganhInput.value = ma;
             maNganhDisplay.value = ten ? (ma + ' - ' + ten) : ma;
+
+            // Khi chọn ngành, cập nhật việc có cần hiện nhóm môn hiếm hay không (chỉ THPT)
+            capNhatNhomThptMoRongTheoNganh();
 
             const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
             modal.hide();

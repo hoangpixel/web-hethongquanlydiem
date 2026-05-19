@@ -53,6 +53,17 @@ public class TrangChuController {
             @RequestParam(value = "diemSinh", required = false) Double dSinh,
             @RequestParam(value = "diemSu", required = false) Double dSu,
             @RequestParam(value = "diemDia", required = false) Double dDia,
+            // THPT mở rộng (chỉ hiện trên UI khi chọn THPT)
+            @RequestParam(value = "diemCNCN", required = false) Double dCNCN,
+            @RequestParam(value = "diemCNNN", required = false) Double dCNNN,
+            @RequestParam(value = "diemTI", required = false) Double dTI,
+            @RequestParam(value = "diemKTPL", required = false) Double dKTPL,
+            @RequestParam(value = "diemNK1", required = false) Double dNK1,
+            @RequestParam(value = "diemNK2", required = false) Double dNK2,
+            @RequestParam(value = "diemNK3", required = false) Double dNK3,
+            @RequestParam(value = "diemNK4", required = false) Double dNK4,
+            @RequestParam(value = "diemNK5", required = false) Double dNK5,
+            @RequestParam(value = "diemNK6", required = false) Double dNK6,
             @RequestParam(value = "diemDGNL", required = false) Double diemDGNL,
             @RequestParam(value = "diemCong", required = false) Double diemCongNhap,
             @RequestParam(value = "khuVucUuTien", required = false) String khuVucUuTien,
@@ -60,6 +71,20 @@ public class TrangChuController {
             Model model) {
 
         model.addAttribute("dsNganh", nganhRepository.findAll(Sort.by(Sort.Direction.ASC, "maNganh")));
+
+        boolean isThpt = "THPT".equalsIgnoreCase(phuongThuc);
+        if (!isThpt) {
+            dCNCN = null;
+            dCNNN = null;
+            dTI = null;
+            dKTPL = null;
+            dNK1 = null;
+            dNK2 = null;
+            dNK3 = null;
+            dNK4 = null;
+            dNK5 = null;
+            dNK6 = null;
+        }
 
         String maNganhChuan = maNganh == null ? "" : maNganh.trim();
 
@@ -70,6 +95,16 @@ public class TrangChuController {
         model.addAttribute("dAnh", dAnh); model.addAttribute("dLy", dLy);
         model.addAttribute("dHoa", dHoa); model.addAttribute("dSinh", dSinh);
         model.addAttribute("dSu", dSu); model.addAttribute("dDia", dDia);
+        model.addAttribute("dCNCN", dCNCN);
+        model.addAttribute("dCNNN", dCNNN);
+        model.addAttribute("dTI", dTI);
+        model.addAttribute("dKTPL", dKTPL);
+        model.addAttribute("dNK1", dNK1);
+        model.addAttribute("dNK2", dNK2);
+        model.addAttribute("dNK3", dNK3);
+        model.addAttribute("dNK4", dNK4);
+        model.addAttribute("dNK5", dNK5);
+        model.addAttribute("dNK6", dNK6);
         model.addAttribute("diemDGNLNhap", diemDGNL);
 
         double diemCong = diemCongNhap == null ? 0.0 : diemCongNhap;
@@ -163,10 +198,16 @@ public class TrangChuController {
         // XỬ LÝ PHƯƠNG THỨC THPT VÀ V-SAT CHO TẤT CẢ TỔ HỢP
         List<Map<String, Object>> ketQuaTatCaToHop = new ArrayList<>();
 
+        Map<String, Double> diemTheoMa = taoMapDiemTheoMa(
+            dToan, dVan, dAnh, dLy, dHoa, dSinh, dSu, dDia,
+            dCNCN, dCNNN, dTI, dKTPL,
+            dNK1, dNK2, dNK3, dNK4, dNK5, dNK6
+        );
+
         for (ToHopMonThi th : danhSachToHop) {
-            Double diemMon1 = getDiemTheoMa(th.getThMon1(), dToan, dVan, dAnh, dLy, dHoa, dSinh, dSu, dDia);
-            Double diemMon2 = getDiemTheoMa(th.getThMon2(), dToan, dVan, dAnh, dLy, dHoa, dSinh, dSu, dDia);
-            Double diemMon3 = getDiemTheoMa(th.getThMon3(), dToan, dVan, dAnh, dLy, dHoa, dSinh, dSu, dDia);
+            Double diemMon1 = getDiemTheoMa(th.getThMon1(), diemTheoMa);
+            Double diemMon2 = getDiemTheoMa(th.getThMon2(), diemTheoMa);
+            Double diemMon3 = getDiemTheoMa(th.getThMon3(), diemTheoMa);
 
             // Nếu thí sinh nhập KHÔNG ĐỦ 3 môn của tổ hợp này -> Bỏ qua tổ hợp này
             if (diemMon1 == null || diemMon2 == null || diemMon3 == null) {
@@ -260,22 +301,108 @@ public class TrangChuController {
 
     // --- HÀM BỔ TRỢ ---
     // Sư phụ dùng hàm này để gắp điểm tương ứng với mã môn trong DB
-// Sư phụ dùng hàm này để gắp điểm tương ứng với mã môn trong DB
-    private Double getDiemTheoMa(String maMon, Double to, Double va, Double an, Double ly, Double ho, Double si, Double su, Double di) {
-        if (maMon == null || maMon.trim().isEmpty()) return null;
+    private Map<String, Double> taoMapDiemTheoMa(
+            Double dToan,
+            Double dVan,
+            Double dAnh,
+            Double dLy,
+            Double dHoa,
+            Double dSinh,
+            Double dSu,
+            Double dDia,
+            Double dCNCN,
+            Double dCNNN,
+            Double dTI,
+            Double dKTPL,
+            Double dNK1,
+            Double dNK2,
+            Double dNK3,
+            Double dNK4,
+            Double dNK5,
+            Double dNK6
+    ) {
+        Map<String, Double> diemTheoMa = new HashMap<>();
+        diemTheoMa.put("TO", dToan);
+        diemTheoMa.put("VA", dVan);
+        diemTheoMa.put("N1", dAnh);
+        diemTheoMa.put("LI", dLy);
+        diemTheoMa.put("HO", dHoa);
+        diemTheoMa.put("SI", dSinh);
+        diemTheoMa.put("SU", dSu);
+        diemTheoMa.put("DI", dDia);
+
+        diemTheoMa.put("CNCN", dCNCN);
+        diemTheoMa.put("CNNN", dCNNN);
+        diemTheoMa.put("TI", dTI);
+        diemTheoMa.put("KTPL", dKTPL);
+
+        diemTheoMa.put("NK1", dNK1);
+        diemTheoMa.put("NK2", dNK2);
+        diemTheoMa.put("NK3", dNK3);
+        diemTheoMa.put("NK4", dNK4);
+        diemTheoMa.put("NK5", dNK5);
+        diemTheoMa.put("NK6", dNK6);
+        return diemTheoMa;
+    }
+
+    private Double getDiemTheoMa(String maMon, Map<String, Double> diemTheoMa) {
+        if (maMon == null || maMon.trim().isEmpty() || diemTheoMa == null) return null;
+
         switch (maMon.trim().toUpperCase()) {
-            case "TO": case "TOÁN": return to;
-            case "VA": case "VĂN": return va;
-            
+            case "TO":
+            case "TOÁN":
+                return diemTheoMa.get("TO");
+            case "VA":
+            case "VĂN":
+                return diemTheoMa.get("VA");
+
             // THÊM MÃ "N1" VÀO DÒNG NÀY ĐỂ NÓ NHẬN DIỆN MÔN TIẾNG ANH NHÉ ĐỆ TỬ
-            case "AN": case "ANH": case "N1": return an; 
-            
-            case "LI": case "LÍ": case "LÝ": return ly;
-            case "HO": case "HÓA": return ho;
-            case "SI": case "SINH": return si;
-            case "SU": case "SỬ": return su;
-            case "DI": case "ĐỊA": return di;
-            default: return null;
+            case "AN":
+            case "ANH":
+            case "N1":
+                return diemTheoMa.get("N1");
+
+            case "LI":
+            case "LÍ":
+            case "LÝ":
+                return diemTheoMa.get("LI");
+            case "HO":
+            case "HÓA":
+                return diemTheoMa.get("HO");
+            case "SI":
+            case "SINH":
+                return diemTheoMa.get("SI");
+            case "SU":
+            case "SỬ":
+                return diemTheoMa.get("SU");
+            case "DI":
+            case "ĐỊA":
+                return diemTheoMa.get("DI");
+
+            case "CNCN":
+                return diemTheoMa.get("CNCN");
+            case "CNNN":
+                return diemTheoMa.get("CNNN");
+            case "TI":
+                return diemTheoMa.get("TI");
+            case "KTPL":
+                return diemTheoMa.get("KTPL");
+
+            case "NK1":
+                return diemTheoMa.get("NK1");
+            case "NK2":
+                return diemTheoMa.get("NK2");
+            case "NK3":
+                return diemTheoMa.get("NK3");
+            case "NK4":
+                return diemTheoMa.get("NK4");
+            case "NK5":
+                return diemTheoMa.get("NK5");
+            case "NK6":
+                return diemTheoMa.get("NK6");
+
+            default:
+                return null;
         }
     }
 
