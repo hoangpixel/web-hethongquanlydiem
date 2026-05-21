@@ -128,12 +128,12 @@ public class DiemThiSinh {
         // ===== NĂNG KHIẾU (chỉ tối đa 2) =====
         Map<String, Double> nangKhieu = new LinkedHashMap<>();
 
-        nangKhieu.put("Kể chuyện - Đọc diễn cảm", nangKhieu1);
-        nangKhieu.put("Hát", nangKhieu2);
-        nangKhieu.put("Hình họa", nangKhieu3);
-        nangKhieu.put("Trang trí", nangKhieu4);
-        nangKhieu.put("Hát - Nhạc cụ", nangKhieu5);
-        nangKhieu.put("Xướng âm - Thẩm âm, Tiết tấu", nangKhieu6);
+        nangKhieu.put("Năng Khiếu 1", nangKhieu1);
+        nangKhieu.put("Năng Khiếu 2", nangKhieu2);
+        nangKhieu.put("Năng Khiếu 3", nangKhieu3);
+        nangKhieu.put("Năng Khiếu 4", nangKhieu4);
+        nangKhieu.put("Năng Khiếu 5", nangKhieu5);
+        nangKhieu.put("Năng Khiếu 6", nangKhieu6);
 
         int count = 0;
 

@@ -14,6 +14,8 @@ import java.util.Map;
 
 import javax.imageio.ImageIO;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
@@ -44,6 +46,8 @@ import jakarta.servlet.http.HttpSession;
 
 @Controller
 public class WebController {
+
+    private static final Logger log = LoggerFactory.getLogger(WebController.class);
 
     @Autowired
     private TuyensinhService tuyensinhService;
@@ -230,7 +234,14 @@ public class WebController {
         map.put("diemXetTuyen", nv.getDiemXetTuyen());
 
         double diemThxt = nv.getDiemThxt()     != null ? nv.getDiemThxt()     : 0.0;
-        double diemCong = layDiemCongTuBangDiemCong(nv, d);
+
+        DiemCongXetTuyen dcRow = timDiemCongXetTuyen(nv, d);
+        double diemCongCC = (dcRow != null && dcRow.getDiemCC() != null) ? dcRow.getDiemCC() : 0.0;
+        double diemCongUtxt = (dcRow != null && dcRow.getDiemUtxt() != null) ? dcRow.getDiemUtxt() : 0.0;
+        double diemCong = (dcRow != null && dcRow.getDiemTong() != null)
+            ? dcRow.getDiemTong()
+            : (nv.getDiemCong() != null ? nv.getDiemCong() : 0.0);
+
         double diemUtqd = nv.getDiemUtqd()     != null ? nv.getDiemUtqd()     : 0.0;
         double diemXt   = nv.getDiemXetTuyen() != null ? nv.getDiemXetTuyen() : 0.0;
 
@@ -255,6 +266,8 @@ public class WebController {
         map.put("diemThxt",   diemThxt);
         map.put("diemThgxt",  diemThgxtTinh);
         map.put("diemCong",   diemCong);
+        map.put("diemCongCC", diemCongCC);
+        map.put("diemCongUtxt", diemCongUtxt);
         map.put("diemUtqd",   diemUtqd);
         map.put("mLechDiem",  mucDoLech);
 
@@ -326,13 +339,15 @@ public class WebController {
             String maMon = maMons[i];
             boolean isNN = isNgoaiNgu(maMon);
 
+            String tenHienThi = tenMonHienThi(maMon);
+
             Double diemThi = isNN ? d.getNgoaiNguThi() : null;
             Double diemCc  = isNN ? d.getNgoaiNguCc()  : null;
             Double diem    = getDiemTheoMa(maMon, d);
 
             if (i > 0) sb.append(",");
             sb.append("{");
-            sb.append("&quot;ten&quot;:&quot;").append(maMon).append("&quot;,");
+            sb.append("&quot;ten&quot;:&quot;").append(escapeJson(tenHienThi)).append("&quot;,");
             sb.append("&quot;diem&quot;:").append(diem != null ? fmt(diem) : "0").append(",");
             sb.append("&quot;heSo&quot;:").append(heSos[i]).append(",");
             sb.append("&quot;isNgoaiNgu&quot;:").append(isNN).append(",");
@@ -368,6 +383,7 @@ public class WebController {
         StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < 3; i++) {
             String maMon = maMons[i];
+            String tenHienThi = tenMonHienThi(maMon);
             Double diemTho = getDiemTheoMa(maMon, d);   // điểm thô V-SAT (VD: 88.5)
             double diemThoVal = diemTho != null ? diemTho : 0.0;
 
@@ -391,7 +407,7 @@ public class WebController {
                 "&quot;congThucTongQuat&quot;:&quot;%s&quot;," +
                 "&quot;congThucThaySo&quot;:&quot;%s&quot;," +
                 "&quot;ghiChu&quot;:&quot;%s&quot;}",
-                maMon,
+                escapeJson(tenHienThi),
                 fmt(diemThoVal),
                 fmt(diemQD),
                 heSos[i],
@@ -400,6 +416,16 @@ public class WebController {
         }
         sb.append("]");
         return sb.toString();
+    }
+
+    private String tenMonHienThi(String maMon) {
+        if (maMon == null) return "";
+        String raw = maMon.trim();
+        String u = raw.toUpperCase();
+        if (u.matches("NK[1-6]")) {
+            return "Năng Khiếu " + u.substring(2);
+        }
+        return raw;
     }
 
     private String buildGiaiThuongJson(List<GiaiThuong> list) {
@@ -481,21 +507,44 @@ public class WebController {
         }
     }
 
-    private double layDiemCongTuBangDiemCong(NguyenVongXetTuyen nv, DiemThiSinh d) {
+    private DiemCongXetTuyen timDiemCongXetTuyen(NguyenVongXetTuyen nv, DiemThiSinh d) {
         if (nv == null || d == null) {
-            return 0.0;
+            return null;
         }
 
-        DiemCongXetTuyen dc = diemCongXetTuyenRepository
-                .findByCccdAndMaNganhAndMaToHopAndPhuongThuc(
-                        d.getCccd(),
-                        nv.getNvMaNganh(),
-                        nv.getTtThm(),
-                        nv.getTtPhuongThuc()
-                );
+        String cccd = d.getCccd() != null ? d.getCccd().trim() : "";
 
-        return dc != null && dc.getDiemTong() != null
-                ? dc.getDiemTong()
-                : 0.0;
+        String maNganh = nv.getNvMaNganh() != null ? nv.getNvMaNganh().trim() : "";
+        maNganh = maNganh.replaceAll("(?i)-CLC.*$", "").trim();
+
+        String maToHop = nv.getTtThm() != null ? nv.getTtThm().trim().toUpperCase() : "";
+        String phuongThuc = nv.getTtPhuongThuc() != null ? nv.getTtPhuongThuc().trim() : "";
+
+        DiemCongXetTuyen dc = null;
+
+        if (!cccd.isEmpty() && !maNganh.isEmpty() && !maToHop.isEmpty() && !phuongThuc.isEmpty()) {
+            String dcKeys = cccd + "_" + maNganh + "_" + maToHop + "_" + phuongThuc;
+            dc = diemCongXetTuyenRepository.findByDcKeys(dcKeys);
+        }
+
+        if (dc == null) {
+            dc = diemCongXetTuyenRepository.findMatchTrimmed(cccd, maNganh, maToHop, phuongThuc);
+        }
+
+        if (dc == null) {
+            dc = diemCongXetTuyenRepository.findByCccdAndMaNganhAndMaToHopAndPhuongThuc(
+                    cccd,
+                    maNganh,
+                    maToHop,
+                    phuongThuc
+            );
+        }
+
+        if (dc == null) {
+            log.debug("Không tìm thấy dòng điểm cộng: cccd={}, maNganh={}, maToHop={}, phuongThuc={} (nvKeys={})",
+                    cccd, maNganh, maToHop, phuongThuc, nv.getNvKeys());
+        }
+
+        return dc;
     }
 }

@@ -187,6 +187,8 @@
                                             data-diem-thxt="${nv.diemThxt}"
                                             data-diem-thgxt="${nv.diemThgxt}"
                                             data-diem-cong="${nv.diemCong}"
+                                            data-diem-cong-cc="${nv.diemCongCC}"
+                                            data-diem-cong-utxt="${nv.diemCongUtxt}"
                                             data-diem-utqd="${nv.diemUtqd}"
                                             data-diem-xt="${nv.diemXetTuyen}"
                                             data-danh-sach-mon="${nv.danhSachMonJson}"
@@ -351,6 +353,8 @@
             var diemThxt  = parseFloat(this.dataset.diemThxt  || '0');
             var diemThgxt = parseFloat(this.dataset.diemThgxt || '0');
             var diemCong  = parseFloat(this.dataset.diemCong  || '0');
+            var diemCongCC   = parseFloat(this.dataset.diemCongCc   || '0');
+            var diemCongUtxt = parseFloat(this.dataset.diemCongUtxt || '0');
             var diemUtqd  = parseFloat(this.dataset.diemUtqd  || '0');
             var diemXt    = parseFloat(this.dataset.diemXt    || '0');
             var lech      = parseFloat(this.dataset.lech      || '0');
@@ -408,14 +412,14 @@
                 var pt = phuongThuc ? phuongThuc.toUpperCase() : '';
                 // "XÉT THPT", "ĐÁNH GIÁ V-SAT", "ĐGNL HCM"
                 if (pt.indexOf('TUYỂN THẲNG') >= 0 || pt.indexOf('TUYEN THANG') >= 0) {
-                    body = renderTuyenThang(danhSachGiaiB64, diemCong, diemUtqd, diemXt);
+                    body = renderTuyenThang(danhSachGiaiB64, diemCong, diemCongCC, diemCongUtxt, diemUtqd, diemXt);
                 } else if (pt.indexOf('DGNL') >= 0 || pt.indexOf('ĐGNL') >= 0) {
-                    body = renderDGNL(diemThxt, diemCong, diemUtqd, diemXt, diemThgxt, diemDauVao, mocQuyDoi, congThucTongQuat, congThucThaySo, ghiChu, doiTuong, khuVuc);
+                    body = renderDGNL(diemThxt, diemCong, diemCongCC, diemCongUtxt, diemUtqd, diemXt, diemThgxt, diemDauVao, mocQuyDoi, congThucTongQuat, congThucThaySo, ghiChu, doiTuong, khuVuc);
                 } else if (pt.indexOf('V-SAT') >= 0 || pt.indexOf('VSAT') >= 0) {
-                    body = renderTHPT(toHop, toHopGoc, monHoc, lech, diemThxt, diemThgxt, diemCong, diemUtqd, diemXt, true, doiTuong, khuVuc);
+                    body = renderTHPT(toHop, toHopGoc, monHoc, lech, diemThxt, diemThgxt, diemCong, diemCongCC, diemCongUtxt, diemUtqd, diemXt, true, doiTuong, khuVuc);
                 } else {
                     // Mặc định còn lại là THPT
-                    body = renderTHPT(toHop, toHopGoc, monHoc, lech, diemThxt, diemThgxt, diemCong, diemUtqd, diemXt, false, doiTuong, khuVuc);
+                    body = renderTHPT(toHop, toHopGoc, monHoc, lech, diemThxt, diemThgxt, diemCong, diemCongCC, diemCongUtxt, diemUtqd, diemXt, false, doiTuong, khuVuc);
                 }
             }
 
@@ -426,7 +430,7 @@
 
     /* ==================== RENDER THPT / V-SAT ==================== */
     // Dùng thẳng điểm từ backend — không tính lại
-    function renderTHPT(toHop, toHopGoc, monHoc, lech, diemThxt, diemThgxt, diemCong, diemUtqd, diemXt, isVSAT, doiTuong, khuVuc) {
+    function renderTHPT(toHop, toHopGoc, monHoc, lech, diemThxt, diemThgxt, diemCong, diemCongCC, diemCongUtxt, diemUtqd, diemXt, isVSAT, doiTuong, khuVuc) {
 
         // Bước 1: lưới điểm môn
         var scoreCells = monHoc.map(function(mon) {
@@ -554,6 +558,8 @@
         + '<p class="ct-section-title">Bước 3 — Cộng điểm ưu tiên, điểm cộng & điểm lệch</p>'
         + '<div class="ct-step-card">'
         + row('ĐTHGXT', diemThgxt.toFixed(2))
+        + row('Điểm cộng chứng chỉ', '+' + (diemCongCC || 0).toFixed(2))
+        + row('Điểm cộng giải thưởng', '+' + (diemCongUtxt || 0).toFixed(2))
         + row('Điểm cộng (ĐC)', '+' + diemCong.toFixed(2))
         + row(dutFormula, '')
         + row('Điểm ưu tiên (ĐƯT)', '+' + diemUtqd.toFixed(2))
@@ -568,17 +574,17 @@
         + '</div>'
 
         // Kết quả
+        + '<div class="ct-note">ĐXT = ĐTHXT + ĐC + ĐƯT + Độ Lệch = '
+        + diemThxt.toFixed(2) + ' + ' + diemCong.toFixed(2) + ' + ' + diemUtqd.toFixed(2) + ((lech >= 0 ? '+' : '') + lech.toFixed(2))
+        + ' = <strong>' + diemXt.toFixed(2) + '</strong> / 30 điểm</div>'
         + '<div class="ct-total-row">'
         + '<span class="ct-total-label">Điểm xét tuyển (ĐXT)</span>'
         + '<span class="ct-total-val">' + diemXt.toFixed(2) + '</span>'
-        + '</div>'
-        + '<div class="ct-note">ĐXT = ĐTHXT + ĐC + ĐƯT + Độ Lệch = '
-        + diemThxt.toFixed(2) + ' + ' + diemCong.toFixed(2) + ' + ' + diemUtqd.toFixed(2) + ((lech >= 0 ? '+' : '') + lech.toFixed(2))
-        + ' = <strong>' + diemXt.toFixed(2) + '</strong> / 30 điểm</div>';
+        + '</div>';
     }
 
     /* ==================== RENDER ĐGNL ==================== */
-    function renderDGNL(diemThxt, diemCong, diemUtqd, diemXt, diemThgxt,
+    function renderDGNL(diemThxt, diemCong, diemCongCC, diemCongUtxt, diemUtqd, diemXt, diemThgxt,
                     diemDauVao, mocQuyDoi, congThucTongQuat, congThucThaySo, ghiChu, doiTuong, khuVuc) {
 
         var sumThgxtCong = diemThxt + diemCong;
@@ -636,18 +642,20 @@
         + '<p class="ct-section-title">Bước 2 — Cộng điểm ưu tiên & điểm cộng</p>'
         + '<div class="ct-step-card">'
         + row('ĐTHGXT', diemThxt.toFixed(2))
+        + row('Điểm cộng chứng chỉ', '+' + (diemCongCC || 0).toFixed(2))
+        + row('Điểm cộng giải thưởng', '+' + (diemCongUtxt || 0).toFixed(2))
         + row('Điểm cộng (ĐC)', '+' + diemCong.toFixed(2))
         + row(dutFormula, '')
         + row('Điểm ưu tiên (ĐƯT)', '+' + diemUtqd.toFixed(2))
         + '</div>'
 
+        + '<div class="ct-note">ĐXT = ĐTHGXT + ĐC + ĐƯT = '
+        + diemThxt.toFixed(2) + ' + ' + diemCong.toFixed(2) + ' + ' + diemUtqd.toFixed(2)
+        + ' = <strong>' + diemXt.toFixed(2) + '</strong> / 30 điểm</div>'
         + '<div class="ct-total-row">'
         + '<span class="ct-total-label">Điểm xét tuyển (ĐXT)</span>'
         + '<span class="ct-total-val">' + diemXt.toFixed(2) + '</span>'
-        + '</div>'
-        + '<div class="ct-note">ĐXT = ĐTHGXT + ĐC + ĐƯT = '
-        + diemThxt.toFixed(2) + ' + ' + diemCong.toFixed(2) + ' + ' + diemUtqd.toFixed(2)
-        + ' = <strong>' + diemXt.toFixed(2) + '</strong> / 30 điểm</div>';
+        + '</div>';
     }
 
     function row(label, val) {
@@ -658,12 +666,19 @@
     }
 
     /* ==================== RENDER Tuyen Thang ==================== */
-    function renderTuyenThang(b64, diemCong, diemUtqd, diemXt) {
+    function renderTuyenThang(b64, diemCong, diemCongCC, diemCongUtxt, diemUtqd, diemXt) {
         var dsGiai = [];
         try {
             var json = decodeURIComponent(escape(atob(b64)));
             dsGiai = JSON.parse(json);
         } catch(e) {}
+
+        function tenMonHienThi(raw) {
+            raw = (raw || '').trim();
+            var u = raw.toUpperCase();
+            if (/^NK[1-6]$/.test(u)) return 'Năng Khiếu ' + u.substring(2);
+            return raw;
+        }
 
         var giaiRows = '';
         if (dsGiai.length === 0) {
@@ -676,7 +691,7 @@
                     + '<div>'
                     + '<div style="font-weight:700;color:#0369a1;font-size:0.9rem">' + g.loaiGiai + '</div>'
                     + '<div style="font-size:0.8rem;color:#374151;margin-top:3px">'
-                    + 'Môn: <strong>' + g.maMon + '</strong>'
+                    + 'Môn: <strong>' + tenMonHienThi(g.maMon) + '</strong>'
                     + ' &nbsp;|&nbsp; Cấp: <strong>' + g.capGiai + '</strong>'
                     + ' &nbsp;|&nbsp; Đối tượng: <strong>' + g.doiTuong + '</strong>'
                     + '</div>'
@@ -686,82 +701,119 @@
         }
 
         return '<p class="ct-section-title">Giải thưởng & Điều kiện tuyển thẳng</p>'
-            + '<div>' + giaiRows + '</div>';
+            + '<div>' + giaiRows + '</div>'
+
+            + '<hr style="border-color:#e5e7eb;margin:14px 0">'
+            + '<div class="ct-step-card">'
+            + row('Điểm cộng chứng chỉ', '+' + (diemCongCC || 0).toFixed(2))
+            + row('Điểm cộng giải thưởng', '+' + (diemCongUtxt || 0).toFixed(2))
+            + row('Điểm cộng (ĐC)', '+' + (diemCong || 0).toFixed(2))
+            + row('Điểm ưu tiên (ĐƯT)', '+' + (diemUtqd || 0).toFixed(2))
+            + '</div>'
+
+            + '<div class="ct-total-row">'
+            + '<span class="ct-total-label">Điểm xét tuyển (ĐXT)</span>'
+            + '<span class="ct-total-val">' + (diemXt || 0).toFixed(2) + '</span>'
+            + '</div>';
     }
 
     // ── Lọc Nguyện Vọng ──
     (function () {
-        // Lấy tất cả rows từ tbody
-        var tbody = document.querySelector('.nv-table tbody');
-        var allRows = tbody ? Array.from(tbody.querySelectorAll('tr[data-nganh]')) : [];
+        // Luôn khai báo các hàm global trước để tránh case init bị crash
+        window._fnvState = window._fnvState || { nganh: '', tohop: '', sort: null };
 
-        // Gán data-attribute cho mỗi tr để dễ lọc
-        // (Chạy 1 lần sau khi DOM load)
-        document.querySelectorAll('.nv-table tbody tr').forEach(function (tr) {
-            var cells = tr.querySelectorAll('td');
-            if (cells.length < 4) return;
-            tr.dataset.nganh  = cells[1].textContent.trim(); // Mã ngành
-            tr.dataset.tohop  = cells[3].textContent.trim(); // Tổ hợp
-            tr.dataset.diem   = parseFloat(cells[4].textContent.trim()) || 0;
-        });
-
-        // Populate dropdowns từ dữ liệu thực
-        var rows = Array.from(document.querySelectorAll('.nv-table tbody tr'));
-        var nganhs = [...new Set(rows.map(r => r.dataset.nganh).filter(Boolean))];
-        var toHops = [...new Set(rows.map(r => r.dataset.tohop).filter(Boolean))];
-
-        var selN = document.getElementById('fnvNganh');
-        var selT = document.getElementById('fnvToHop');
-        nganhs.forEach(function (n) {
-            var o = document.createElement('option');
-            o.value = n; o.textContent = n;
-            selN.appendChild(o);
-        });
-        toHops.forEach(function (t) {
-            var o = document.createElement('option');
-            o.value = t; o.textContent = t;
-            selT.appendChild(o);
-        });
-        // State
-        window._fnvState = { nganh: '', tohop: '', sort: null };
+        function _el(id) { return document.getElementById(id); }
 
         window.openFilterModal = function () {
-            var s = window._fnvState;
-            document.getElementById('fnvNganh').value  = s.nganh;
-            document.getElementById('fnvToHop').value  = s.tohop;
-            document.getElementById('fnvSortAsc').classList.toggle('selected',  s.sort === 'asc');
-            document.getElementById('fnvSortDesc').classList.toggle('selected', s.sort === 'desc');
-            document.getElementById('filterNVOverlay').classList.add('show');
+            var overlay = _el('filterNVOverlay');
+            if (!overlay) return;
+
+            var s = window._fnvState || { nganh: '', tohop: '', sort: null };
+            var selN = _el('fnvNganh');
+            var selT = _el('fnvToHop');
+
+            if (selN) selN.value = s.nganh || '';
+            if (selT) selT.value = s.tohop || '';
+
+            var asc = _el('fnvSortAsc');
+            var desc = _el('fnvSortDesc');
+            if (asc) asc.classList.toggle('selected', s.sort === 'asc');
+            if (desc) desc.classList.toggle('selected', s.sort === 'desc');
+
+            overlay.classList.add('show');
         };
 
         window.closeFilterModal = function () {
-            document.getElementById('filterNVOverlay').classList.remove('show');
+            var overlay = _el('filterNVOverlay');
+            if (overlay) overlay.classList.remove('show');
         };
 
         window.onOverlayClick = function (e) {
-            if (e.target === document.getElementById('filterNVOverlay')) closeFilterModal();
+            var overlay = _el('filterNVOverlay');
+            if (overlay && e.target === overlay) window.closeFilterModal();
         };
 
         window.fnvSelectSort = function (dir) {
-            var s = window._fnvState;
+            var s = window._fnvState || (window._fnvState = { nganh: '', tohop: '', sort: null });
             s.sort = (s.sort === dir) ? null : dir;
-            document.getElementById('fnvSortAsc').classList.toggle('selected',  s.sort === 'asc');
-            document.getElementById('fnvSortDesc').classList.toggle('selected', s.sort === 'desc');
+
+            var asc = _el('fnvSortAsc');
+            var desc = _el('fnvSortDesc');
+            if (asc) asc.classList.toggle('selected', s.sort === 'asc');
+            if (desc) desc.classList.toggle('selected', s.sort === 'desc');
         };
 
         window.fnvApply = function () {
-            var nganh = document.getElementById('fnvNganh').value;
-            var tohop = document.getElementById('fnvToHop').value;
-            var sort = window._fnvState.sort;
+            var selN = _el('fnvNganh');
+            var selT = _el('fnvToHop');
+            var nganh = selN ? selN.value : '';
+            var tohop = selT ? selT.value : '';
+            var sort = (window._fnvState || {}).sort;
 
-            var url = '/ketqua?page=0';
-
+            // để relative URL cho chắc (khỏi dính contextPath)
+            var url = 'ketqua?page=0';
             if (nganh) url += '&nganh=' + encodeURIComponent(nganh);
             if (tohop) url += '&tohop=' + encodeURIComponent(tohop);
             if (sort) url += '&sort=' + encodeURIComponent(sort);
 
             window.location.href = url;
         };
+
+        // Init data attributes + populate dropdowns (không để crash kill toàn bộ script)
+        try {
+            document.querySelectorAll('.nv-table tbody tr').forEach(function (tr) {
+                var cells = tr.querySelectorAll('td');
+                if (cells.length < 5) return;
+                tr.dataset.nganh = (cells[1].textContent || '').trim();
+                tr.dataset.tohop = (cells[3].textContent || '').trim();
+                tr.dataset.diem = parseFloat((cells[4].textContent || '').trim()) || 0;
+            });
+
+            var rows = Array.from(document.querySelectorAll('.nv-table tbody tr'));
+            var nganhs = Array.from(new Set(rows.map(function (r) { return r.dataset.nganh; }).filter(Boolean)));
+            var toHops = Array.from(new Set(rows.map(function (r) { return r.dataset.tohop; }).filter(Boolean)));
+
+            var selN = _el('fnvNganh');
+            var selT = _el('fnvToHop');
+            if (selN && !selN.dataset.populated) {
+                nganhs.forEach(function (n) {
+                    var o = document.createElement('option');
+                    o.value = n; o.textContent = n;
+                    selN.appendChild(o);
+                });
+                selN.dataset.populated = 'true';
+            }
+            if (selT && !selT.dataset.populated) {
+                toHops.forEach(function (t) {
+                    var o = document.createElement('option');
+                    o.value = t; o.textContent = t;
+                    selT.appendChild(o);
+                });
+                selT.dataset.populated = 'true';
+            }
+        } catch (e) {
+            console.warn('Filter NV init failed:', e);
+        }
 
         function fnvRender() {
             var s = window._fnvState;
@@ -791,7 +843,38 @@
             var hasFilter = s.nganh || s.tohop || s.sort;
             document.getElementById('btnFilterNV').classList.toggle('active', !!hasFilter);
         }
-    });
+
+        // Sync state từ querystring (để mở modal thấy đúng lựa chọn)
+        try {
+            var params = new URLSearchParams(window.location.search || '');
+            var s0 = window._fnvState || (window._fnvState = { nganh: '', tohop: '', sort: null });
+            s0.nganh = params.get('nganh') || '';
+            s0.tohop = params.get('tohop') || '';
+            var sort0 = params.get('sort');
+            s0.sort = (sort0 === 'asc' || sort0 === 'desc') ? sort0 : null;
+        } catch (e) {
+            // ignore
+        }
+
+        // Bind change events
+        var selN2 = _el('fnvNganh');
+        if (selN2) {
+            selN2.addEventListener('change', function () {
+                window._fnvState.nganh = this.value || '';
+                fnvRender();
+            });
+        }
+        var selT2 = _el('fnvToHop');
+        if (selT2) {
+            selT2.addEventListener('change', function () {
+                window._fnvState.tohop = this.value || '';
+                fnvRender();
+            });
+        }
+
+        // Render lần đầu (tô trạng thái phễu)
+        fnvRender();
+    })();
     /* ==================== TÍNH MĐƯT ==================== */
     function tinhMDUT(doiTuong, khuVuc) {
         doiTuong = (doiTuong || '').trim().toUpperCase();

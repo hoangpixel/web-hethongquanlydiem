@@ -1,6 +1,8 @@
 package com.sgu.tuyensinh.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.sgu.tuyensinh.model.DiemCongXetTuyen;
 
@@ -12,4 +14,21 @@ public interface DiemCongXetTuyenRepository extends JpaRepository<DiemCongXetTuy
             String maToHop,
             String phuongThuc
     );
+
+        DiemCongXetTuyen findByDcKeys(String dcKeys);
+
+        @Query("""
+            select dc
+            from DiemCongXetTuyen dc
+            where dc.cccd = :cccd
+              and dc.maNganh = :maNganh
+              and dc.maToHop = :maToHop
+              and upper(trim(dc.phuongThuc)) = upper(trim(:phuongThuc))
+            """)
+        DiemCongXetTuyen findMatchTrimmed(
+            @Param("cccd") String cccd,
+            @Param("maNganh") String maNganh,
+            @Param("maToHop") String maToHop,
+            @Param("phuongThuc") String phuongThuc
+        );
 }
