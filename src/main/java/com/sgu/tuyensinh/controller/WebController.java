@@ -9,8 +9,10 @@ import java.io.ByteArrayOutputStream;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.imageio.ImageIO;
 
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.sgu.tuyensinh.model.ChungChi;
 import com.sgu.tuyensinh.model.DiemCongXetTuyen;
 import com.sgu.tuyensinh.model.DiemThiSinh;
 import com.sgu.tuyensinh.model.GiaiThuong;
@@ -34,6 +37,7 @@ import com.sgu.tuyensinh.model.Nganh;
 import com.sgu.tuyensinh.model.NguyenVongXetTuyen;
 import com.sgu.tuyensinh.model.ThiSinh;
 import com.sgu.tuyensinh.model.ToHopMonThi;
+import com.sgu.tuyensinh.repository.ChungChiRepository;
 import com.sgu.tuyensinh.repository.DiemCongXetTuyenRepository;
 import com.sgu.tuyensinh.repository.DiemThiSinhRepository;
 import com.sgu.tuyensinh.repository.GiaiThuongRepository;
@@ -65,10 +69,13 @@ public class WebController {
     private TinhDiemService tinhDiemService;
 
     @Autowired
-    private GiaiThuongRepository giaiThuongRepository;
+    private GiaiThuongRepository giaiThuongRepository;  
     
     @Autowired
     private DiemCongXetTuyenRepository diemCongXetTuyenRepository;
+
+    @Autowired
+    private ChungChiRepository chungChiRepository;
 
     // 1. KHI NGƯỜI DÙNG GÕ localhost:8080/login -> HIỆN TRANG ĐĂNG NHẬP
     @GetMapping("/login")
@@ -139,7 +146,29 @@ public class WebController {
         page,
         size
     );
+    List<NguyenVongXetTuyen> allNV =
+        tuyensinhService.getAllNguyenVongByThiSinh(ts.getCccd());
+        Set<String> dsNganhFilter = new LinkedHashSet<>();
+        Set<String> dsToHopFilter = new LinkedHashSet<>();
+
+        for (NguyenVongXetTuyen nv : allNV) {
+            if (nv.getNvMaNganh() != null && !nv.getNvMaNganh().isBlank()) {
+                dsNganhFilter.add(nv.getNvMaNganh());
+            }
+
+            if (nv.getTtThm() != null && !nv.getTtThm().isBlank()) {
+                dsToHopFilter.add(nv.getTtThm());
+            }
+        }
+
+        model.addAttribute("dsNganhFilter", dsNganhFilter);
+        model.addAttribute("dsToHopFilter", dsToHopFilter);
     DiemThiSinh diemTs = diemThiSinhRepository.findByCccd(ts.getCccd());
+    ChungChi cc = chungChiRepository.findTopByCccdOrderByDiemQuydoiDesc(ts.getCccd());
+
+if (diemTs != null && cc != null && cc.getDiemQuydoi() != null) {
+    diemTs.setNgoaiNguCc(cc.getDiemQuydoi());
+}
 
     // ── Build Map cho từng nguyện vọng ──
     List<Map<String, Object>> danhSachNV = new ArrayList<>();
@@ -378,42 +407,97 @@ public class WebController {
         }
 
         String[] maMons = { th.getThMon1(), th.getThMon2(), th.getThMon3() };
-        int[]    heSos  = { th.getHsMon1().intValue(), th.getHsMon2().intValue(), th.getHsMon3().intValue() };
+        int[] heSos = {
+            th.getHsMon1().intValue(),
+            th.getHsMon2().intValue(),
+            th.getHsMon3().intValue()
+        };
 
         StringBuilder sb = new StringBuilder("[");
+
         for (int i = 0; i < 3; i++) {
             String maMon = maMons[i];
             String tenHienThi = tenMonHienThi(maMon);
-            Double diemTho = getDiemTheoMa(maMon, d);   // điểm thô V-SAT (VD: 88.5)
+            boolean ngoaiNgu = isNgoaiNgu(maMon);
+
+            Double diemTho = ngoaiNgu
+                    ? d.getNgoaiNguThi()
+                    : getDiemTheoMa(maMon, d);
+
             double diemThoVal = diemTho != null ? diemTho : 0.0;
 
-            // Gọi nội suy để lấy chi tiết
             TinhDiemService.KetQuaQuyDoiChiTiet ct =
                     tinhDiemService.quyDoiDiemVSATChiTiet(maMon, diemThoVal);
 
-            double diemQD = ct.getDiemQuyDoi() != null ? ct.getDiemQuyDoi() : 0.0;
-            String moc    = ct.getMocQuyDoi()       != null ? ct.getMocQuyDoi().replace("\"", "&quot;")       : "";
-            String tq     = ct.getCongThucTongQuat() != null ? ct.getCongThucTongQuat().replace("\"", "&quot;") : "";
-            String ts     = ct.getCongThucThaySo()   != null ? ct.getCongThucThaySo().replace("\"", "&quot;")  : "";
-            String gc     = ct.getGhiChu()           != null ? ct.getGhiChu().replace("\"", "&quot;")          : "";
+            double diemNoiSuy = ct.getDiemQuyDoi() != null
+                    ? ct.getDiemQuyDoi()
+                    : 0.0;
+
+            Double diemCc = null;
+
+            if (ngoaiNgu) {
+                ChungChi cc = chungChiRepository
+                        .findTopByCccdOrderByDiemQuydoiDesc(d.getCccd());
+
+                if (cc != null && cc.getDiemQuydoi() != null) {
+                    diemCc = cc.getDiemQuydoi();
+                }
+            }
+
+            double diemQD = diemNoiSuy;
+            boolean ccDuocChon = false;
+
+            if (diemCc != null && diemCc > diemNoiSuy) {
+                diemQD = diemCc;
+                ccDuocChon = true;
+            }
+
+            String moc = ct.getMocQuyDoi() != null
+                    ? ct.getMocQuyDoi().replace("\"", "&quot;")
+                    : "";
+
+            String tq = ct.getCongThucTongQuat() != null
+                    ? ct.getCongThucTongQuat().replace("\"", "&quot;")
+                    : "";
+
+            String ts = ct.getCongThucThaySo() != null
+                    ? ct.getCongThucThaySo().replace("\"", "&quot;")
+                    : "";
+
+            String gc = ct.getGhiChu() != null
+                    ? ct.getGhiChu().replace("\"", "&quot;")
+                    : "";
 
             if (i > 0) sb.append(",");
+
             sb.append(String.format(
-                "{&quot;ten&quot;:&quot;%s&quot;," +
-                "&quot;diemTho&quot;:%s," +
-                "&quot;diem&quot;:%s," +
-                "&quot;heSo&quot;:%d," +
-                "&quot;mocQuyDoi&quot;:&quot;%s&quot;," +
-                "&quot;congThucTongQuat&quot;:&quot;%s&quot;," +
-                "&quot;congThucThaySo&quot;:&quot;%s&quot;," +
-                "&quot;ghiChu&quot;:&quot;%s&quot;}",
-                escapeJson(tenHienThi),
-                fmt(diemThoVal),
-                fmt(diemQD),
-                heSos[i],
-                moc, tq, ts, gc
+                    "{&quot;ten&quot;:&quot;%s&quot;," +
+                    "&quot;diemTho&quot;:%s," +
+                    "&quot;diemNoiSuy&quot;:%s," +
+                    "&quot;diemCc&quot;:%s," +
+                    "&quot;ccDuocChon&quot;:%s," +
+                    "&quot;isNgoaiNgu&quot;:%s," +
+                    "&quot;diem&quot;:%s," +
+                    "&quot;heSo&quot;:%d," +
+                    "&quot;mocQuyDoi&quot;:&quot;%s&quot;," +
+                    "&quot;congThucTongQuat&quot;:&quot;%s&quot;," +
+                    "&quot;congThucThaySo&quot;:&quot;%s&quot;," +
+                    "&quot;ghiChu&quot;:&quot;%s&quot;}",
+                    escapeJson(tenHienThi),
+                    fmt(diemThoVal),
+                    fmt(diemNoiSuy),
+                    diemCc != null ? fmt(diemCc) : "null",
+                    ccDuocChon,
+                    ngoaiNgu,
+                    fmt(diemQD),
+                    heSos[i],
+                    moc,
+                    tq,
+                    ts,
+                    gc
             ));
         }
+
         sb.append("]");
         return sb.toString();
     }

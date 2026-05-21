@@ -3,6 +3,7 @@ package com.sgu.tuyensinh.service;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -95,5 +96,9 @@ public class TuyensinhService {
 
         return nguyenVongRepository
             .findByNnCccd(cccd, pageable);
+    }
+
+    public List<NguyenVongXetTuyen> getAllNguyenVongByThiSinh(String cccd) {
+        return nguyenVongRepository.findAllByCccd(cccd);
     }
 }

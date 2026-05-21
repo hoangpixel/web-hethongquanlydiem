@@ -1,9 +1,13 @@
 package com.sgu.tuyensinh.repository;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.sgu.tuyensinh.model.NguyenVongXetTuyen;
@@ -36,4 +40,7 @@ public interface NguyenVongRepository extends JpaRepository<NguyenVongXetTuyen, 
         String ttThm,
         Pageable pageable
     );
+
+    @Query("SELECT nv FROM NguyenVongXetTuyen nv WHERE nv.nnCccd = :cccd ORDER BY nv.nvTt ASC")
+        List<NguyenVongXetTuyen> findAllByCccd(@Param("cccd") String cccd);
 }

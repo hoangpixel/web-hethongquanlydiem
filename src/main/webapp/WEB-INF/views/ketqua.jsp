@@ -305,6 +305,9 @@
                 <div class="filter-nv-label">Ngành</div>
                 <select class="filter-nv-select" id="fnvNganh">
                     <option value="">Tất cả ngành</option>
+                    <c:forEach var="n" items="${dsNganhFilter}">
+                        <option value="${n}" ${n == nganhFilter ? 'selected' : ''}>${n}</option>
+                    </c:forEach>
                 </select>
             </div>
 
@@ -312,6 +315,9 @@
                 <div class="filter-nv-label">Tổ hợp môn</div>
                 <select class="filter-nv-select" id="fnvToHop">
                     <option value="">Tất cả tổ hợp</option>
+                    <c:forEach var="t" items="${dsToHopFilter}">
+                        <option value="${t}" ${t == tohopFilter ? 'selected' : ''}>${t}</option>
+                    </c:forEach>
                 </select>
             </div>
 
@@ -432,71 +438,78 @@
     // Dùng thẳng điểm từ backend — không tính lại
     function renderTHPT(toHop, toHopGoc, monHoc, lech, diemThxt, diemThgxt, diemCong, diemCongCC, diemCongUtxt, diemUtqd, diemXt, isVSAT, doiTuong, khuVuc) {
 
-        // Bước 1: lưới điểm môn
+        var noteCC = '';
+
         var scoreCells = monHoc.map(function(mon) {
             var extraHtml = '';
-            var diemHienThi = mon.diem; // mặc định
+            var diemHienThi = mon.diem;
 
             if (mon.isNgoaiNgu) {
                 var dThi = mon.diemThi != null ? parseFloat(mon.diemThi) : null;
-                var dCc  = mon.diemCc  != null ? parseFloat(mon.diemCc)  : null;
-
-                // Xác định điểm nào được chọn (cao hơn)
+                var dNoiSuy = mon.diemNoiSuy != null ? parseFloat(mon.diemNoiSuy) : null;
+                var dCc = mon.diemCc != null ? parseFloat(mon.diemCc) : null;
                 var isChosenCc = mon.ccDuocChon === true || mon.ccDuocChon === 'true';
 
-                // Điểm hiển thị to ở giữa card = điểm được chọn
                 if (isChosenCc && dCc != null) {
                     diemHienThi = dCc.toFixed(2);
-                } else if (!isChosenCc && dThi != null) {
+                } else if (isVSAT && dNoiSuy != null) {
+                    diemHienThi = dNoiSuy.toFixed(2);
+                } else if (dThi != null) {
                     diemHienThi = dThi.toFixed(2);
                 }
 
                 var badgeThi = '';
-                var badgeCc  = '';
+                var badgeCc = '';
 
-                // CHỈ hiện badge khi có điểm chứng chỉ
-                if (dThi != null && dCc != null) {
-                    badgeThi = '<div style="font-size:0.72rem;margin-top:4px;padding:3px 9px;border-radius:10px;display:inline-block;'
-                        + 'background:#dbeafe;color:#1d4ed8;font-weight:700;border:2px solid #93c5fd'
-                        + '">'
-                        + 'Thi: ' + dThi.toFixed(2)
-                        + (!isChosenCc ? ' ✓' : '')
+                if (isChosenCc && dCc != null && dNoiSuy != null) {
+                    badgeThi =
+                        '<div style="font-size:0.72rem;margin-top:4px;padding:3px 9px;border-radius:10px;display:inline-block;'
+                        + 'background:#dbeafe;color:#1d4ed8;font-weight:700;border:2px solid #93c5fd">'
+                        + 'V-SAT: ' + dNoiSuy.toFixed(2)
                         + '</div>';
                 }
-        
-                if (dThi == null && dCc == null) {
+
+                if (dThi == null && dNoiSuy == null && dCc == null) {
                     badgeThi = '<div style="font-size:0.71rem;color:#9ca3af;margin-top:4px">Không có điểm</div>';
                 }
 
-                extraHtml = '<div style="margin-top:5px;display:flex;flex-direction:column;align-items:center;gap:2px">'
+                extraHtml =
+                    '<div style="margin-top:5px;display:flex;flex-direction:column;align-items:center;gap:2px">'
                     + badgeThi + badgeCc
                     + '</div>';
             }
 
             return '<div class="ct-score-item">'
                 + '<div class="ct-score-name">' + mon.ten + '</div>'
-                + '<div class="ct-score-val">'  + diemHienThi + '</div>'
+                + '<div class="ct-score-val">' + diemHienThi + '</div>'
                 + '<div class="ct-score-wt">Hệ số ' + mon.heSo + '</div>'
                 + extraHtml
                 + '</div>';
         }).join('');
 
-        // Bước 2: công thức ĐTHXT
-        var W = monHoc.reduce(function(s, m) { return s + m.heSo; }, 0);
+        var W = monHoc.reduce(function(s, m) {
+            return s + Number(m.heSo || 0);
+        }, 0);
+
         var formulaParts = monHoc.map(function(m) {
             return m.diem + '&times;' + m.heSo;
         }).join(' + ');
-        
-        // Block chi tiết nội suy V-SAT (chỉ hiện nếu có data)
+
         var noiSuyVSAT = '';
+
         if (isVSAT) {
             var noiSuyRows = monHoc.map(function(mon) {
                 var coChiTiet = mon.mocQuyDoi && mon.congThucThaySo;
+                var isChosenCc = mon.ccDuocChon === true || mon.ccDuocChon === 'true';
+
+                var diemNoiSuyText = mon.diemNoiSuy != null ? mon.diemNoiSuy : mon.diem;
+                var diemHienThiText = isChosenCc && mon.diemCc != null ? mon.diemCc : diemNoiSuyText;
+
                 return '<div style="border:1px solid #e0f2fe;border-radius:8px;padding:10px 12px;margin-bottom:8px;background:#f0f9ff">'
                     + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
-                    + '<span style="font-weight:700;color:#0369a1;font-size:0.82rem"> Môn: ' + mon.ten + '</span>'
+                    + '<span style="font-weight:700;color:#0369a1;font-size:0.82rem">Môn: ' + mon.ten + '</span>'
                     + '<span style="font-size:0.78rem;color:#6b7280">Điểm thô V-SAT: <strong style="color:#111">' + mon.diemTho + '</strong>'
-                    + ' → Quy đổi thang 10: <strong style="color:#0d9488">' + mon.diem + '</strong></span>'
+                    + ' → Nội suy thang 10: <strong style="color:#0d9488">' + diemNoiSuyText + '</strong></span>'
                     + '</div>'
                     + (coChiTiet
                         ? '<div style="font-size:0.75rem;color:#6b7280;margin-bottom:3px">Mốc: <strong style="color:#374151">' + mon.mocQuyDoi + '</strong></div>'
@@ -508,27 +521,34 @@
                     + '</div>';
             }).join('');
 
-            noiSuyVSAT = ''
-                + '<div style="margin:4px 0 10px">'
+            noiSuyVSAT =
+                '<div style="margin:4px 0 10px">'
                 + '<div style="font-size:0.78rem;font-weight:700;color:#0369a1;margin-bottom:6px;'
                 + 'padding:5px 10px;background:#e0f2fe;border-radius:6px;display:inline-block">'
                 + 'Chi tiết nội suy V-SAT → Thang điểm 10</div>'
                 + noiSuyRows
                 + '</div>';
+
+            var monCC = monHoc.find(function(m) {
+                return m.isNgoaiNgu &&
+                    (m.ccDuocChon === true || m.ccDuocChon === 'true');
+            });
+
+            if (monCC) {
+                noteCC =
+                    '<div style="margin-top:10px;padding:10px 12px;'
+                    + 'background:#ecfdf5;border:1px solid #86efac;'
+                    + 'border-radius:8px;font-size:0.78rem;'
+                    + 'color:#166534;font-weight:600;">'
+                    + 'Vì điểm chứng chỉ ngoại ngữ cao hơn điểm nội suy V-SAT '
+                    + '→ hệ thống sử dụng điểm chứng chỉ để tính ĐTHXT.'
+                    + '</div>';
+            }
         }
 
-        // Bước 3: quy đổi tổ hợp gốc
-        var sameTH  = (Math.abs(lech) < 0.001);
-        var lechStr = '';
-        if (!sameTH) {
-            var sign = lech > 0 ? '-' : '+';
-            lechStr  = diemThxt.toFixed(2) + ' ' + sign + ' ' + Math.abs(lech).toFixed(2)
-                    + ' = ' + diemThgxt.toFixed(2);
-        }
+        var sameTH = Math.abs(lech) < 0.001;
 
-        // Bước 4: công thức ĐƯT
         var sumThgxtCong = diemThgxt + diemCong;
-
         var mdutObj = tinhMDUT(doiTuong, khuVuc);
         var mdut = mdutObj.tong;
 
@@ -537,50 +557,44 @@
             : 'Vì ' + sumThgxtCong.toFixed(2) + ' &ge; 22,5 → [(30 &minus; ' + diemThgxt.toFixed(2) + ' &minus; ' + diemCong.toFixed(2) + ') / 7.5] &times; ' + mdut.toFixed(2);
 
         return ''
-        // Bước 1
-        + '<p class="ct-section-title">'
-        + (isVSAT ? 'Bước 1 — Điểm từng môn (đã quy về thang 10 theo bảng V-SAT)'
-                : 'Bước 1 — Điểm thi từng môn')
-        + '</p>'
-        + '<div class="ct-score-grid">' + scoreCells + '</div>'
+            + '<p class="ct-section-title">'
+            + (isVSAT ? 'Bước 1 — Điểm từng môn (đã quy về thang 10 theo bảng V-SAT)' : 'Bước 1 — Điểm thi từng môn')
+            + '</p>'
+            + '<div class="ct-score-grid">' + scoreCells + '</div>'
 
-        + noiSuyVSAT 
+            + noiSuyVSAT
 
-        // Bước 2
-        + '<div class="ct-step-card">'
-        + '<div class="ct-step-label">Bước 2 — Tính ĐTHXT (điểm tổ hợp xét tuyển)</div>'
-        + '<div class="ct-formula">(' + formulaParts + ') / ' + W + ' &times; 3</div>'
-        + '<div class="ct-result">ĐTHXT = <span class="val">' + diemThxt.toFixed(2) + '</span></div>'
-        + '</div>'
+            + '<div class="ct-step-card">'
+            + '<div class="ct-step-label">Bước 2 — Tính ĐTHXT (điểm tổ hợp xét tuyển)</div>'
+            + '<div class="ct-formula">(' + formulaParts + ') / ' + W + ' &times; 3</div>'
+            + '<div class="ct-result">ĐTHXT = <span class="val">' + diemThxt.toFixed(2) + '</span></div>'
+            + noteCC
+            + '</div>'
 
-        // Bước 4
-        + '<hr style="border-color:#e5e7eb;margin:14px 0">'
-        + '<p class="ct-section-title">Bước 3 — Cộng điểm ưu tiên, điểm cộng & điểm lệch</p>'
-        + '<div class="ct-step-card">'
-        + row('ĐTHGXT', diemThgxt.toFixed(2))
-        + row('Điểm cộng chứng chỉ', '+' + (diemCongCC || 0).toFixed(2))
-        + row('Điểm cộng giải thưởng', '+' + (diemCongUtxt || 0).toFixed(2))
-        + row('Điểm cộng (ĐC)', '+' + diemCong.toFixed(2))
-        + row(dutFormula, '')
-        + row('Điểm ưu tiên (ĐƯT)', '+' + diemUtqd.toFixed(2))
-        + row(
-            sameTH
-                ? 'Quy đổi về tổ hợp gốc <strong>' + toHopGoc + '</strong> (cùng tổ hợp, không cần quy đổi)'
-                : 'Quy đổi từ tổ hợp <strong>' + toHop + '</strong> về tổ hợp gốc <strong>' + toHopGoc + '</strong>',
-            sameTH
-                ? '0.00'
-                : ((lech >= 0 ? '+' : '') + lech.toFixed(2))
-        )
-        + '</div>'
+            + '<hr style="border-color:#e5e7eb;margin:14px 0">'
+            + '<p class="ct-section-title">Bước 3 — Cộng điểm ưu tiên, điểm cộng & điểm lệch</p>'
+            + '<div class="ct-step-card">'
+            + row('ĐTHGXT', diemThgxt.toFixed(2))
+            + row('Điểm cộng chứng chỉ', '+' + (diemCongCC || 0).toFixed(2))
+            + row('Điểm cộng giải thưởng', '+' + (diemCongUtxt || 0).toFixed(2))
+            + row('Điểm cộng (ĐC)', '+' + diemCong.toFixed(2))
+            + row(dutFormula, '')
+            + row('Điểm ưu tiên (ĐƯT)', '+' + diemUtqd.toFixed(2))
+            + row(
+                sameTH
+                    ? 'Quy đổi về tổ hợp gốc <strong>' + toHopGoc + '</strong> (cùng tổ hợp, không cần quy đổi)'
+                    : 'Quy đổi từ tổ hợp <strong>' + toHop + '</strong> về tổ hợp gốc <strong>' + toHopGoc + '</strong>',
+                sameTH ? '0.00' : ((lech >= 0 ? '+' : '') + lech.toFixed(2))
+            )
+            + '</div>'
 
-        // Kết quả
-        + '<div class="ct-note">ĐXT = ĐTHXT + ĐC + ĐƯT + Độ Lệch = '
-        + diemThxt.toFixed(2) + ' + ' + diemCong.toFixed(2) + ' + ' + diemUtqd.toFixed(2) + ((lech >= 0 ? '+' : '') + lech.toFixed(2))
-        + ' = <strong>' + diemXt.toFixed(2) + '</strong> / 30 điểm</div>'
-        + '<div class="ct-total-row">'
-        + '<span class="ct-total-label">Điểm xét tuyển (ĐXT)</span>'
-        + '<span class="ct-total-val">' + diemXt.toFixed(2) + '</span>'
-        + '</div>';
+            + '<div class="ct-note">ĐXT = ĐTHXT + ĐC + ĐƯT + Độ Lệch = '
+            + diemThxt.toFixed(2) + ' + ' + diemCong.toFixed(2) + ' + ' + diemUtqd.toFixed(2) + ((lech >= 0 ? '+' : '') + lech.toFixed(2))
+            + ' = <strong>' + diemXt.toFixed(2) + '</strong> / 30 điểm</div>'
+            + '<div class="ct-total-row">'
+            + '<span class="ct-total-label">Điểm xét tuyển (ĐXT)</span>'
+            + '<span class="ct-total-val">' + diemXt.toFixed(2) + '</span>'
+            + '</div>';
     }
 
     /* ==================== RENDER ĐGNL ==================== */
@@ -789,28 +803,8 @@
                 tr.dataset.diem = parseFloat((cells[4].textContent || '').trim()) || 0;
             });
 
-            var rows = Array.from(document.querySelectorAll('.nv-table tbody tr'));
-            var nganhs = Array.from(new Set(rows.map(function (r) { return r.dataset.nganh; }).filter(Boolean)));
-            var toHops = Array.from(new Set(rows.map(function (r) { return r.dataset.tohop; }).filter(Boolean)));
-
             var selN = _el('fnvNganh');
             var selT = _el('fnvToHop');
-            if (selN && !selN.dataset.populated) {
-                nganhs.forEach(function (n) {
-                    var o = document.createElement('option');
-                    o.value = n; o.textContent = n;
-                    selN.appendChild(o);
-                });
-                selN.dataset.populated = 'true';
-            }
-            if (selT && !selT.dataset.populated) {
-                toHops.forEach(function (t) {
-                    var o = document.createElement('option');
-                    o.value = t; o.textContent = t;
-                    selT.appendChild(o);
-                });
-                selT.dataset.populated = 'true';
-            }
         } catch (e) {
             console.warn('Filter NV init failed:', e);
         }
