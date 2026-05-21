@@ -1,13 +1,15 @@
 package com.sgu.tuyensinh.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.stereotype.Service;
-
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
 
 import com.sgu.tuyensinh.model.NguyenVongXetTuyen;
 import com.sgu.tuyensinh.model.ThiSinh;
@@ -51,5 +53,47 @@ public class TuyensinhService {
     // Hàm lấy danh sách Nguyện vọng
     public Page<NguyenVongXetTuyen> getNguyenVongByThiSinh(String cccd, int page, int size) {
         return nguyenVongRepository.findByNnCccdOrderByNvTtAsc(cccd, PageRequest.of(page, size));
+    }
+        public Page<NguyenVongXetTuyen> getNguyenVongByThiSinhFilter(
+            String cccd,
+            String nganh,
+            String tohop,
+            String sort,
+            int page,
+            int size) {
+
+        Sort sorting = Sort.unsorted();
+
+        if ("asc".equalsIgnoreCase(sort)) {
+            sorting = Sort.by("diemXetTuyen").ascending();
+        } else if ("desc".equalsIgnoreCase(sort)) {
+            sorting = Sort.by("diemXetTuyen").descending();
+        }
+
+        Pageable pageable = PageRequest.of(page, size, sorting);
+
+        boolean hasNganh = nganh != null && !nganh.isBlank();
+        boolean hasToHop = tohop != null && !tohop.isBlank();
+
+        if (hasNganh && hasToHop) {
+            return nguyenVongRepository
+                .findByNnCccdAndNvMaNganhAndTtThm(
+                    cccd, nganh, tohop, pageable);
+        }
+
+        if (hasNganh) {
+            return nguyenVongRepository
+                .findByNnCccdAndNvMaNganh(
+                    cccd, nganh, pageable);
+        }
+
+        if (hasToHop) {
+            return nguyenVongRepository
+                .findByNnCccdAndTtThm(
+                    cccd, tohop, pageable);
+        }
+
+        return nguyenVongRepository
+            .findByNnCccd(cccd, pageable);
     }
 }

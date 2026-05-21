@@ -105,8 +105,24 @@
                             </div>
                         </div>
                     </c:forEach>
+                    <!-- ĐIỂM ƯU TIÊN ĐỐI TƯỢNG -->
+                    <div class="col-md-2 col-6">
+                        <div class="score-card has-value" style="background: linear-gradient(135deg, #FEF3C7, #FDE68A); box-shadow: 0 4px 10px rgba(245, 158, 11, 0.15);">
+                            <div class="score-label">ƯT Đối Tượng</div>
+                            <div class="score-value" id="diemDoiTuong"></div>
+                        </div>
+                    </div>
+
+                    <!-- ĐIỂM ƯU TIÊN KHU VỰC -->
+                    <div class="col-md-2 col-6">
+                        <div class="score-card has-value" style="background: linear-gradient(135deg, #FECACA, #FCA5A5); box-shadow: 0 4px 10px rgba(248, 113, 113, 0.15);">
+                            <div class="score-label">ƯT Khu Vực</div>
+                            <div class="score-value" id="diemKhuVuc"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
+
         </div>
  
         <!-- SECTION 2: DANH SÁCH NGUYỆN VỌNG -->
@@ -124,8 +140,6 @@
                 </button>
             </div>
             <div class="table-responsive">
-                <!-- Filter tags -->
-            <div id="filterTagRow" style="display:none; gap:6px; flex-wrap:wrap;"></div>
                 <table class="nv-table">
                     <thead>
                         <tr>
@@ -183,7 +197,8 @@
                                             data-ghi-chu="${nv.ghiChu}"
                                             data-danh-sach-giai="${nv.danhSachGiaiJson}"
                                             data-doi-tuong="${thiSinh.doiTuong}"
-                                            data-khu-vuc="${thiSinh.khuVuc}">
+                                            data-khu-vuc="${thiSinh.khuVuc}"
+                                            data-ket-qua="${nv.nvKetQua}">
                                         Chi Tiết
                                     </button>
                                 </td>
@@ -204,16 +219,30 @@
                     </tbody>
                 </table>
 
-                <div class="pagination">
-                    <c:if test="${currentPage > 0}">
-                        <a href="?page=${currentPage - 1}"> ⮜ </a>
-                    </c:if>
+                <div class="pagination" style="display:flex;justify-content:center;align-items:center;gap:14px;margin-top:20px;">
+                    <a class="btn btn-light border px-4 ${currentPage == 0 ? 'disabled' : ''}"
+                    href="?page=0&nganh=${nganhFilter}&tohop=${tohopFilter}&sort=${sortFilter}">
+                        &lt;&lt;
+                    </a>
 
-                    <span>Trang ${currentPage + 1}</span>
+                    <a class="btn btn-light border px-3 ${currentPage == 0 ? 'disabled' : ''}"
+                    href="?page=${currentPage - 1}&nganh=${nganhFilter}&tohop=${tohopFilter}&sort=${sortFilter}">
+                        &lt;
+                    </a>
 
-                    <c:if test="${currentPage < totalPages - 1}">
-                        <a href="?page=${currentPage + 1}"> ⮞ </a>
-                    </c:if>
+                    <span style="font-weight:700;color:#111827;">
+                        Trang ${currentPage + 1} / ${totalPages}
+                    </span>
+
+                    <a class="btn btn-light border px-3 ${currentPage >= totalPages - 1 ? 'disabled' : ''}"
+                    href="?page=${currentPage + 1}&nganh=${nganhFilter}&tohop=${tohopFilter}&sort=${sortFilter}">
+                        &gt;
+                    </a>
+
+                    <a class="btn btn-light border px-4 ${currentPage >= totalPages - 1 ? 'disabled' : ''}"
+                    href="?page=${totalPages - 1}&nganh=${nganhFilter}&tohop=${tohopFilter}&sort=${sortFilter}">
+                        &gt;&gt;
+                    </a>
                 </div>
 
             </div>
@@ -246,6 +275,9 @@
                     <span class="badge rounded-pill"
                         style="background:#FFFBEB;color:#b45309;font-weight:600;font-size:.75rem"
                         id="badge-th"></span>
+                    <span class="badge rounded-pill"
+                        style="background:#FFFBEB;color:#b40909;font-weight:600;font-size:.75rem"
+                        id="badge-kq"></span>
                 </div>
 
                 <div class="modal-body p-4" id="modal-chitiet-body">
@@ -313,6 +345,7 @@
             var phuongThuc = this.dataset.phuongThuc;
             var toHop      = this.dataset.toHop;
             var toHopGoc   = this.dataset.toHopGoc;
+            var ketQua     = this.dataset.ketQua;
 
             // Điểm đã tính sẵn từ backend — dùng thẳng, không tính lại
             var diemThxt  = parseFloat(this.dataset.diemThxt  || '0');
@@ -364,6 +397,7 @@
             document.getElementById('badge-th').textContent    = 'Tổ hợp: '      + toHop;
             document.getElementById('modal-nv-info').textContent =
                 'Nguyện vọng ' + nvTt + ' — Chi tiết từng bước tính điểm';
+            document.getElementById('badge-kq').textContent   = 'Kết quả: '     + ketQua;
 
             // ── 4. Render body modal ──
             var body = '';
@@ -376,8 +410,7 @@
                 if (pt.indexOf('TUYỂN THẲNG') >= 0 || pt.indexOf('TUYEN THANG') >= 0) {
                     body = renderTuyenThang(danhSachGiaiB64, diemCong, diemUtqd, diemXt);
                 } else if (pt.indexOf('DGNL') >= 0 || pt.indexOf('ĐGNL') >= 0) {
-                    body = renderDGNL(diemThxt, diemCong, diemUtqd, diemXt,
-                                    diemDauVao, mocQuyDoi, congThucTongQuat, congThucThaySo, ghiChu, doiTuong, khuVuc);
+                    body = renderDGNL(diemThxt, diemCong, diemUtqd, diemXt, diemThgxt, diemDauVao, mocQuyDoi, congThucTongQuat, congThucThaySo, ghiChu, doiTuong, khuVuc);
                 } else if (pt.indexOf('V-SAT') >= 0 || pt.indexOf('VSAT') >= 0) {
                     body = renderTHPT(toHop, toHopGoc, monHoc, lech, diemThxt, diemThgxt, diemCong, diemUtqd, diemXt, true, doiTuong, khuVuc);
                 } else {
@@ -417,8 +450,8 @@
                 var badgeThi = '';
                 var badgeCc  = '';
 
-                if (dThi != null) {
-                    // Thi luôn nổi bật (bold, viền xanh đậm), không phụ thuộc vào cái nào được chọn
+                // CHỈ hiện badge khi có điểm chứng chỉ
+                if (dThi != null && dCc != null) {
                     badgeThi = '<div style="font-size:0.72rem;margin-top:4px;padding:3px 9px;border-radius:10px;display:inline-block;'
                         + 'background:#dbeafe;color:#1d4ed8;font-weight:700;border:2px solid #93c5fd'
                         + '">'
@@ -426,17 +459,7 @@
                         + (!isChosenCc ? ' ✓' : '')
                         + '</div>';
                 }
-                /*if (dCc != null) {
-                    // CC chỉ nổi bật nếu được chọn, còn không thì mờ
-                    badgeCc = '<div style="font-size:0.72rem;margin-top:3px;padding:2px 7px;border-radius:10px;display:inline-block;'
-                        + (isChosenCc
-                            ? 'background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb'   // CC được chọn → mờ đi
-                            : 'background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb')  // CC không chọn → mờ
-                        + '">'
-                        + 'CC: ' + dCc.toFixed(2)
-                        + (isChosenCc ? ' ✓' : '')
-                        + '</div>';
-                }*/
+        
                 if (dThi == null && dCc == null) {
                     badgeThi = '<div style="font-size:0.71rem;color:#9ca3af;margin-top:4px">Không có điểm</div>';
                 }
@@ -501,9 +524,12 @@
 
         // Bước 4: công thức ĐƯT
         var sumThgxtCong = diemThgxt + diemCong;
-        var mdut = tinhMDUT(doiTuong, khuVuc);
+
+        var mdutObj = tinhMDUT(doiTuong, khuVuc);
+        var mdut = mdutObj.tong;
+
         var dutFormula = sumThgxtCong < 22.5
-            ? 'Vì ' + sumThgxtCong.toFixed(2) + ' &lt; 22,5 → Cộng ưu tiên bình thường (MĐƯT = ' + mdut.toFixed(2) + ')'
+            ? 'Vì ' + sumThgxtCong.toFixed(2) + ' &lt; 22,5 → Cộng ưu tiên bình thường (MĐƯT: ƯT Khu vực + ƯT Đối tượng = ' + mdutObj.diemKV.toFixed(2) + ' + ' + mdutObj.diemDT.toFixed(2) + ' = ' + mdut.toFixed(2) + ')'
             : 'Vì ' + sumThgxtCong.toFixed(2) + ' &ge; 22,5 → [(30 &minus; ' + diemThgxt.toFixed(2) + ' &minus; ' + diemCong.toFixed(2) + ') / 7.5] &times; ' + mdut.toFixed(2);
 
         return ''
@@ -523,27 +549,22 @@
         + '<div class="ct-result">ĐTHXT = <span class="val">' + diemThxt.toFixed(2) + '</span></div>'
         + '</div>'
 
-        // Bước 3
-        + '<div class="ct-step-card">'
-        + '<div class="ct-step-label">Bước 3 — Quy đổi về tổ hợp gốc <strong>' + toHopGoc + '</strong>'
-        + (sameTH ? ' (cùng tổ hợp, không cần quy đổi)' : '') + '</div>'
-        + (!sameTH ? '<div class="ct-formula">ĐTHGXT = ' + lechStr + '</div>' : '')
-        + '<div class="ct-result">ĐTHGXT = <span class="val">' + diemThgxt.toFixed(2) + '</span></div>'
-        + (!sameTH
-            ? '<div class="ct-note">Mức chênh lệch tổ hợp <strong>' + toHop + '</strong> → <strong>'
-            + toHopGoc + '</strong>: <strong>' + (lech >= 0 ? '+' : '') + lech.toFixed(2)
-            + '</strong> điểm (theo bảng độ lệch THPT)</div>'
-            : '')
-        + '</div>'
-
         // Bước 4
         + '<hr style="border-color:#e5e7eb;margin:14px 0">'
-        + '<p class="ct-section-title">Bước 4 — Cộng điểm ưu tiên & điểm cộng</p>'
+        + '<p class="ct-section-title">Bước 3 — Cộng điểm ưu tiên, điểm cộng & điểm lệch</p>'
         + '<div class="ct-step-card">'
         + row('ĐTHGXT', diemThgxt.toFixed(2))
         + row('Điểm cộng (ĐC)', '+' + diemCong.toFixed(2))
         + row(dutFormula, '')
         + row('Điểm ưu tiên (ĐƯT)', '+' + diemUtqd.toFixed(2))
+        + row(
+            sameTH
+                ? 'Quy đổi về tổ hợp gốc <strong>' + toHopGoc + '</strong> (cùng tổ hợp, không cần quy đổi)'
+                : 'Quy đổi từ tổ hợp <strong>' + toHop + '</strong> về tổ hợp gốc <strong>' + toHopGoc + '</strong>',
+            sameTH
+                ? '0.00'
+                : ((lech >= 0 ? '+' : '') + lech.toFixed(2))
+        )
         + '</div>'
 
         // Kết quả
@@ -551,17 +572,20 @@
         + '<span class="ct-total-label">Điểm xét tuyển (ĐXT)</span>'
         + '<span class="ct-total-val">' + diemXt.toFixed(2) + '</span>'
         + '</div>'
-        + '<div class="ct-note">ĐXT = ĐTHGXT + ĐC + ĐƯT = '
-        + diemThgxt.toFixed(2) + ' + ' + diemCong.toFixed(2) + ' + ' + diemUtqd.toFixed(2)
+        + '<div class="ct-note">ĐXT = ĐTHXT + ĐC + ĐƯT + Độ Lệch = '
+        + diemThxt.toFixed(2) + ' + ' + diemCong.toFixed(2) + ' + ' + diemUtqd.toFixed(2) + ((lech >= 0 ? '+' : '') + lech.toFixed(2))
         + ' = <strong>' + diemXt.toFixed(2) + '</strong> / 30 điểm</div>';
     }
 
     /* ==================== RENDER ĐGNL ==================== */
-    function renderDGNL(diemThxt, diemCong, diemUtqd, diemXt,
+    function renderDGNL(diemThxt, diemCong, diemUtqd, diemXt, diemThgxt,
                     diemDauVao, mocQuyDoi, congThucTongQuat, congThucThaySo, ghiChu, doiTuong, khuVuc) {
 
         var sumThgxtCong = diemThxt + diemCong;
-        var mdut = tinhMDUT(doiTuong, khuVuc);
+
+        var mdutObj = tinhMDUT(doiTuong, khuVuc);
+        var mdut = mdutObj.tong;
+
         var dutFormula = sumThgxtCong < 22.5
             ? 'Vì ' + sumThgxtCong.toFixed(2) + ' &lt; 22,5 → Cộng ưu tiên bình thường (MĐƯT = ' + mdut.toFixed(2) + ')'
             : 'Vì ' + sumThgxtCong.toFixed(2) + ' &ge; 22,5 → [(30 &minus; ' + diemThgxt.toFixed(2) + ' &minus; ' + diemCong.toFixed(2) + ') / 7.5] &times; ' + mdut.toFixed(2);
@@ -664,6 +688,7 @@
         return '<p class="ct-section-title">Giải thưởng & Điều kiện tuyển thẳng</p>'
             + '<div>' + giaiRows + '</div>';
     }
+
     // ── Lọc Nguyện Vọng ──
     (function () {
         // Lấy tất cả rows từ tbody
@@ -725,11 +750,17 @@
         };
 
         window.fnvApply = function () {
-            var s = window._fnvState;
-            s.nganh = document.getElementById('fnvNganh').value;
-            s.tohop = document.getElementById('fnvToHop').value;
-            fnvRender();
-            closeFilterModal();
+            var nganh = document.getElementById('fnvNganh').value;
+            var tohop = document.getElementById('fnvToHop').value;
+            var sort = window._fnvState.sort;
+
+            var url = '/ketqua?page=0';
+
+            if (nganh) url += '&nganh=' + encodeURIComponent(nganh);
+            if (tohop) url += '&tohop=' + encodeURIComponent(tohop);
+            if (sort) url += '&sort=' + encodeURIComponent(sort);
+
+            window.location.href = url;
         };
 
         function fnvRender() {
@@ -756,73 +787,9 @@
                 visible.forEach(function (tr) { tbody.appendChild(tr); });
             }
 
-            fnvRenderTags();
-
             // Cập nhật trạng thái nút phễu
             var hasFilter = s.nganh || s.tohop || s.sort;
             document.getElementById('btnFilterNV').classList.toggle('active', !!hasFilter);
-        }
-
-        function fnvRenderTags() {
-            var s   = window._fnvState;
-            var row = document.getElementById('filterTagRow');
-            row.innerHTML = '';
-
-            function makeTag(label, onClear) {
-                var span = document.createElement('span');
-                span.className = 'filter-tag-nv';
-                span.innerHTML = label + ' <button aria-label="Xóa">&times;</button>';
-                span.querySelector('button').onclick = onClear;
-                row.appendChild(span);
-            }
-
-            if (s.nganh) makeTag('Ngành: ' + s.nganh, function () {
-                s.nganh = ''; document.getElementById('fnvNganh').value = ''; fnvRender();
-            });
-            if (s.tohop) makeTag('Tổ hợp: ' + s.tohop, function () {
-                s.tohop = ''; document.getElementById('fnvToHop').value = ''; fnvRender();
-            });
-            if (s.sort) makeTag('Điểm: ' + (s.sort === 'asc' ? 'Tăng dần' : 'Giảm dần'), function () {
-                s.sort = null; fnvRender();
-            });
-            row.style.display = (s.nganh || s.tohop || s.sort) ? 'flex' : 'none';
-            row.style.margin  = (s.nganh || s.tohop || s.sort) ? '8px 0 10px' : '0';
-        }
-    })();
-
-    // ── Gộp ô Ngoại Ngữ ──
-    document.addEventListener('DOMContentLoaded', function () {
-        var allCards = document.querySelectorAll('.score-section .score-card');
-        var nnCard = null, nnCcCard = null;
-        var nnValEl = null, nnCcValEl = null;
-
-        allCards.forEach(function (card) {
-            var label = card.querySelector('.score-label');
-            if (!label) return;
-            // Chuẩn hóa: bỏ dấu cách thừa, uppercase
-            var text = label.textContent.trim().toUpperCase();
-
-            // CC phải check TRƯỚC để không bị nhầm với ô NGOẠI NGỮ thường
-            if (text.includes('CC')) {
-                nnCcCard  = card;
-                nnCcValEl = card.querySelector('.score-value');
-            } else if (text.includes('NGO') && (text.includes('NG') || text.includes('NGU'))) {
-                nnCard   = card;
-                nnValEl  = card.querySelector('.score-value');
-            }
-        });
-
-        if (nnValEl && nnCcValEl) {
-            var dThi = parseFloat(nnValEl.textContent.trim())   || 0;
-            var dCc  = parseFloat(nnCcValEl.textContent.trim()) || 0;
-            var best = Math.max(dThi, dCc);
-
-            // Ghi điểm cao hơn vào ô Ngoại Ngữ
-            nnValEl.textContent = best % 1 === 0 ? best.toFixed(1) : best.toString();;
-
-            // Ẩn cột Ngoại Ngữ CC
-            var colCc = nnCcCard.closest('[class*="col-"]');
-            if (colCc) colCc.style.display = 'none';
         }
     });
     /* ==================== TÍNH MĐƯT ==================== */
@@ -843,8 +810,19 @@
         else if (khuVuc.includes('KV2')  && !khuVuc.includes('KV3')) diemKV = 0.25;
         else if (khuVuc.includes('KV3'))                              diemKV = 0.00;
 
-        return diemDT + diemKV;
+        return {
+            diemDT: diemDT,
+            diemKV: diemKV,
+            tong: diemDT + diemKV
+        };
     }
+    var doiTuong = "${thiSinh.doiTuong}";
+    var khuVuc = "${thiSinh.khuVuc}";
+
+    var ketQua = tinhMDUT(doiTuong, khuVuc);
+
+    document.getElementById("diemDoiTuong").innerText = ketQua.diemDT.toFixed(2);
+    document.getElementById("diemKhuVuc").innerText = ketQua.diemKV.toFixed(2);
 </script>
 </body>
 </html>

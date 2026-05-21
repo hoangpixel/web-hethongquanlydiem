@@ -25,12 +25,14 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.sgu.tuyensinh.model.DiemCongXetTuyen;
 import com.sgu.tuyensinh.model.DiemThiSinh;
 import com.sgu.tuyensinh.model.GiaiThuong;
 import com.sgu.tuyensinh.model.Nganh;
 import com.sgu.tuyensinh.model.NguyenVongXetTuyen;
 import com.sgu.tuyensinh.model.ThiSinh;
 import com.sgu.tuyensinh.model.ToHopMonThi;
+import com.sgu.tuyensinh.repository.DiemCongXetTuyenRepository;
 import com.sgu.tuyensinh.repository.DiemThiSinhRepository;
 import com.sgu.tuyensinh.repository.GiaiThuongRepository;
 import com.sgu.tuyensinh.repository.NganhRepository;
@@ -60,6 +62,9 @@ public class WebController {
 
     @Autowired
     private GiaiThuongRepository giaiThuongRepository;
+    
+    @Autowired
+    private DiemCongXetTuyenRepository diemCongXetTuyenRepository;
 
     // 1. KHI NGƯỜI DÙNG GÕ localhost:8080/login -> HIỆN TRANG ĐĂNG NHẬP
     @GetMapping("/login")
@@ -111,14 +116,25 @@ public class WebController {
     }
 
     // 3. TRANG HIỂN THỊ BẢNG KẾT QUẢ NGUYỆN VỌNG
-  @GetMapping("/ketqua")
-public String hienThiTrangKetQua(HttpSession session, Model model,
-                                 @RequestParam(defaultValue = "0") int page) {
+    @GetMapping("/ketqua")
+    public String hienThiTrangKetQua(HttpSession session, Model model,
+                                 @RequestParam(defaultValue = "0") int page,
+                                 @RequestParam(required = false) String nganh,
+                                 @RequestParam(required = false) String tohop,
+                                 @RequestParam(required = false) String sort) {
     ThiSinh ts = (ThiSinh) session.getAttribute("thiSinhDangNhap");
     if (ts == null) return "redirect:/login";
 
     int size = 10;
-    Page<NguyenVongXetTuyen> pageNV = tuyensinhService.getNguyenVongByThiSinh(ts.getCccd(), page, size);
+    Page<NguyenVongXetTuyen> pageNV =
+    tuyensinhService.getNguyenVongByThiSinhFilter(
+        ts.getCccd(),
+        nganh,
+        tohop,
+        sort,
+        page,
+        size
+    );
     DiemThiSinh diemTs = diemThiSinhRepository.findByCccd(ts.getCccd());
 
     // ── Build Map cho từng nguyện vọng ──
@@ -127,14 +143,18 @@ public String hienThiTrangKetQua(HttpSession session, Model model,
         danhSachNV.add(buildChiTietMap(nv, diemTs));
     }
 
-    model.addAttribute("thiSinh", ts);
-    model.addAttribute("diemThiSinh", diemTs);
-    model.addAttribute("danhSachNV", danhSachNV);
-    model.addAttribute("currentPage", page);
-    model.addAttribute("totalPages", pageNV.getTotalPages());
+        model.addAttribute("thiSinh", ts);
+        model.addAttribute("diemThiSinh", diemTs);
+        model.addAttribute("danhSachNV", danhSachNV);
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", pageNV.getTotalPages());
 
-    return "ketqua";
-}
+        model.addAttribute("nganhFilter", nganh);
+        model.addAttribute("tohopFilter", tohop);
+        model.addAttribute("sortFilter", sort);
+
+        return "ketqua";
+    }
 
     // 4. KHI BẤM NÚT "ĐĂNG XUẤT"
     @GetMapping("/logout")
@@ -210,16 +230,25 @@ public String hienThiTrangKetQua(HttpSession session, Model model,
         map.put("diemXetTuyen", nv.getDiemXetTuyen());
 
         double diemThxt = nv.getDiemThxt()     != null ? nv.getDiemThxt()     : 0.0;
-        double diemCong = nv.getDiemCong()     != null ? nv.getDiemCong()     : 0.0;
+        double diemCong = layDiemCongTuBangDiemCong(nv, d);
         double diemUtqd = nv.getDiemUtqd()     != null ? nv.getDiemUtqd()     : 0.0;
         double diemXt   = nv.getDiemXetTuyen() != null ? nv.getDiemXetTuyen() : 0.0;
 
         Nganh nganh = nganhRepository.findByMaNganh(nv.getNvMaNganh());
         String toHopGoc = (nganh != null && nganh.getToHopGoc() != null)
-                          ? nganh.getToHopGoc()
-                          : nv.getTtThm();
-                          
-        double mucDoLech = getMucDoLech(nv.getNvMaNganh(), nv.getTtThm());
+                        ? nganh.getToHopGoc()
+                        : nv.getTtThm();
+
+        String toHopXetTuyen = nv.getTtThm();
+
+        double mucDoLech = 0.0;
+
+        if (toHopXetTuyen != null && toHopGoc != null
+                && !toHopXetTuyen.trim().equalsIgnoreCase(toHopGoc.trim())) {
+
+            mucDoLech = getMucDoLech(nv.getNvMaNganh(), toHopXetTuyen);
+        }
+
         double diemThgxtTinh = lamTron2(diemThxt - mucDoLech);
 
         map.put("toHopGoc",   toHopGoc);
@@ -450,5 +479,23 @@ public String hienThiTrangKetQua(HttpSession session, Model model,
             case "AN": case "ANH": case "N1": return true;
             default: return false;
         }
+    }
+
+    private double layDiemCongTuBangDiemCong(NguyenVongXetTuyen nv, DiemThiSinh d) {
+        if (nv == null || d == null) {
+            return 0.0;
+        }
+
+        DiemCongXetTuyen dc = diemCongXetTuyenRepository
+                .findByCccdAndMaNganhAndMaToHopAndPhuongThuc(
+                        d.getCccd(),
+                        nv.getNvMaNganh(),
+                        nv.getTtThm(),
+                        nv.getTtPhuongThuc()
+                );
+
+        return dc != null && dc.getDiemTong() != null
+                ? dc.getDiemTong()
+                : 0.0;
     }
 }
