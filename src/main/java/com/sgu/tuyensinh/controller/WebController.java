@@ -266,10 +266,26 @@ if (diemTs != null && cc != null && cc.getDiemQuydoi() != null) {
 
         DiemCongXetTuyen dcRow = timDiemCongXetTuyen(nv, d);
         double diemCongCC = (dcRow != null && dcRow.getDiemCC() != null) ? dcRow.getDiemCC() : 0.0;
-        double diemCongUtxt = (dcRow != null && dcRow.getDiemUtxt() != null) ? dcRow.getDiemUtxt() : 0.0;
-        double diemCong = (dcRow != null && dcRow.getDiemTong() != null)
-            ? dcRow.getDiemTong()
-            : (nv.getDiemCong() != null ? nv.getDiemCong() : 0.0);
+        double diemCongUtxtDb = (dcRow != null && dcRow.getDiemUtxt() != null) ? dcRow.getDiemUtxt() : 0.0;
+
+        String cccd = d != null && d.getCccd() != null ? d.getCccd().trim() : "";
+        String maNganh = nv.getNvMaNganh() != null ? nv.getNvMaNganh().trim() : "";
+        String maToHop = nv.getTtThm() != null ? nv.getTtThm().trim().toUpperCase() : "";
+        double diemCongUtxtCalc = tinhDiemCongGiaiThuong(cccd, maNganh, maToHop);
+
+        double diemCongUtxt = (diemCongUtxtDb != 0.0) ? diemCongUtxtDb : diemCongUtxtCalc;
+
+        // Hiển thị chi tiết (CC, giải thưởng) theo đúng giá trị thực tế,
+        // nhưng tổng điểm cộng (ĐC) bị giới hạn tối đa 3.00.
+        final double MAX_DIEM_CONG = 3.0;
+        double diemCongCCRaw = Math.max(0.0, diemCongCC);
+        double diemCongUtxtRaw = Math.max(0.0, diemCongUtxt);
+        double tongDiemCongRaw = diemCongCCRaw + diemCongUtxtRaw;
+        double diemCong = Math.min(MAX_DIEM_CONG, tongDiemCongRaw);
+
+        // Gán lại để map.put hiển thị đúng breakdown
+        diemCongCC = diemCongCCRaw;
+        diemCongUtxt = diemCongUtxtRaw;
 
         double diemUtqd = nv.getDiemUtqd()     != null ? nv.getDiemUtqd()     : 0.0;
         double diemXt   = nv.getDiemXetTuyen() != null ? nv.getDiemXetTuyen() : 0.0;
@@ -289,7 +305,9 @@ if (diemTs != null && cc != null && cc.getDiemQuydoi() != null) {
             mucDoLech = getMucDoLech(nv.getNvMaNganh(), toHopXetTuyen);
         }
 
-        double diemThgxtTinh = lamTron2(diemThxt - mucDoLech);
+        // UI yêu cầu ĐTHGXT (bước 3) hiển thị đúng bằng ĐTHXT (bước 2).
+        // Độ lệch vẫn hiển thị riêng ở dòng quy đổi tổ hợp.
+        double diemThgxtTinh = lamTron2(diemThxt);
 
         map.put("toHopGoc",   toHopGoc);
         map.put("diemThxt",   diemThxt);
@@ -319,6 +337,11 @@ if (diemTs != null && cc != null && cc.getDiemQuydoi() != null) {
             map.put("congThucThaySo",   "");
             map.put("ghiChu",           "");
             map.put("diemDauVao",       0.0);
+
+            // Tuyển thẳng: không dùng breakdown điểm cộng theo tổ hợp
+            map.put("diemCong",         0.0);
+            map.put("diemCongCC",       0.0);
+            map.put("diemCongUtxt",     0.0);
         } else if (!isDGNL) {
             if (isVSAT) {
                 map.put("danhSachMonJson", buildMonJsonVSAT(nv.getNvMaNganh(), nv.getTtThm(), d));
@@ -589,6 +612,51 @@ if (diemTs != null && cc != null && cc.getDiemQuydoi() != null) {
             case "AN": case "ANH": case "N1": return true;
             default: return false;
         }
+    }
+
+    private String normalizeMonCode(String maMon) {
+        if (maMon == null) return "";
+        String m = maMon.trim().toUpperCase();
+        if (m.isEmpty()) return "";
+        // Quy ước nội bộ: ngoại ngữ gom về N1
+        if (m.equals("AN") || m.equals("ANH") || m.equals("N1")) return "N1";
+        return m;
+    }
+
+    private double tinhDiemCongGiaiThuong(String cccd, String maNganh, String maToHop) {
+        if (cccd == null || maNganh == null || maToHop == null) return 0.0;
+
+        String c = cccd.trim();
+        if (c.isEmpty()) return 0.0;
+
+        String maNganhGoc = maNganh.replaceAll("(?i)-CLC.*$", "").trim();
+        String thm = maToHop.trim().toUpperCase();
+        if (maNganhGoc.isEmpty() || thm.isEmpty()) return 0.0;
+
+        ToHopMonThi th = toHopRepository.findByMaNganhAndMaToHop(maNganhGoc, thm);
+        java.util.Set<String> monTrongToHop = new java.util.HashSet<>();
+        if (th != null) {
+            monTrongToHop.add(normalizeMonCode(th.getThMon1()));
+            monTrongToHop.add(normalizeMonCode(th.getThMon2()));
+            monTrongToHop.add(normalizeMonCode(th.getThMon3()));
+        }
+        monTrongToHop.remove("");
+
+        List<GiaiThuong> dsGiai = giaiThuongRepository.findByCccd(c);
+        if (dsGiai == null || dsGiai.isEmpty()) return 0.0;
+
+        double best = 0.0;
+        for (GiaiThuong g : dsGiai) {
+            if (g == null) continue;
+            String monGiai = normalizeMonCode(g.getMaMon());
+            boolean coMon = !monGiai.isEmpty() && monTrongToHop.contains(monGiai);
+
+            Double v = coMon ? g.getDiemCongCoMon() : g.getDiemCongKhongMon();
+            double val = v != null ? v : 0.0;
+            if (val > best) best = val;
+        }
+
+        return best;
     }
 
     private DiemCongXetTuyen timDiemCongXetTuyen(NguyenVongXetTuyen nv, DiemThiSinh d) {
