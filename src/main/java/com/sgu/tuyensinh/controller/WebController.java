@@ -557,24 +557,99 @@ if (diemTs != null && cc != null && cc.getDiemQuydoi() != null) {
 
     private Double getDiemTheoMa(String maMon, DiemThiSinh d) {
         if (maMon == null || d == null) return null;
+
         switch (maMon.trim().toUpperCase()) {
-            case "TO": case "TOÁN":            return d.getToan();
-            case "VA": case "VĂN":             return d.getVan();
-            case "AN": case "ANH": case "N1":  {
+            case "TO":
+            case "TOÁN":
+                return d.getToan();
+
+            case "VA":
+            case "VĂN":
+                return d.getVan();
+
+            case "AN":
+            case "ANH":
+            case "N1": {
                 // Lấy cái nào lớn hơn giữa điểm thi và điểm chứng chỉ
                 Double diemThi = d.getNgoaiNguThi();
                 Double diemCc  = d.getNgoaiNguCc();
+
                 if (diemThi == null && diemCc == null) return null;
                 if (diemThi == null) return diemCc;
-                if (diemCc  == null) return diemThi;
+                if (diemCc == null) return diemThi;
+
                 return Math.max(diemThi, diemCc);
             }
-            case "LI": case "LÍ": case "LÝ":  return d.getLy();
-            case "HO": case "HÓA":             return d.getHoa();
-            case "SI": case "SINH":            return d.getSinh();
-            case "SU": case "SỬ":              return d.getSu();
-            case "DI": case "ĐỊA":             return d.getDia();
-            default: return null;
+
+            case "LI":
+            case "LÍ":
+            case "LÝ":
+                return d.getLy();
+
+            case "HO":
+            case "HÓA":
+                return d.getHoa();
+
+            case "SI":
+            case "SINH":
+                return d.getSinh();
+
+            case "SU":
+            case "SỬ":
+                return d.getSu();
+
+            case "DI":
+            case "ĐỊA":
+                return d.getDia();
+
+            case "CNCN":
+            case "CN-CN":
+            case "CN - CN":
+                return d.getCongNgheCn();
+
+            case "CNNN":
+            case "CN-NN":
+            case "CN - NN":
+                return d.getCongNgheNn();
+
+            case "TI":
+            case "TIN":
+            case "TIN HỌC":
+                return d.getTin();
+
+            case "KTPL":
+                return d.getKtpl();
+
+            case "NL1":
+            case "NĂNG LỰC":
+                return d.getNangLuc();
+
+            case "NK1":
+            case "NĂNG KHIẾU 1":
+                return d.getNangKhieu1();
+
+            case "NK2":
+            case "NĂNG KHIẾU 2":
+                return d.getNangKhieu2();
+
+            case "NK3":
+            case "NĂNG KHIẾU 3":
+                return d.getNangKhieu3();
+
+            case "NK4":
+            case "NĂNG KHIẾU 4":
+                return d.getNangKhieu4();
+
+            case "NK5":
+            case "NĂNG KHIẾU 5":
+                return d.getNangKhieu5();
+
+            case "NK6":
+            case "NĂNG KHIẾU 6":
+                return d.getNangKhieu6();
+
+            default:
+                return null;
         }
     }
 
@@ -753,4 +828,4 @@ if (diemTs != null && cc != null && cc.getDiemQuydoi() != null) {
         if (upper.contains("THPT"))                                           return "THPT";
         return pt.trim();
     }
-}
+}

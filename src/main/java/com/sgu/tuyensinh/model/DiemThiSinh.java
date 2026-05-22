@@ -125,7 +125,7 @@ public class DiemThiSinh {
             }
         }
 
-        // ===== NĂNG KHIẾU (chỉ tối đa 2) =====
+        // ===== NĂNG KHIẾU: HIỆN ĐỦ 6 MÔN NẾU CÓ ĐIỂM =====
         Map<String, Double> nangKhieu = new LinkedHashMap<>();
 
         nangKhieu.put("Năng Khiếu 1", nangKhieu1);
@@ -135,17 +135,11 @@ public class DiemThiSinh {
         nangKhieu.put("Năng Khiếu 5", nangKhieu5);
         nangKhieu.put("Năng Khiếu 6", nangKhieu6);
 
-        int count = 0;
-
         for (Map.Entry<String, Double> e : nangKhieu.entrySet()) {
-
             Double d = e.getValue();
 
             if (d != null && d > 0) {
                 result.add(new DiemMon(e.getKey(), d));
-                count++;
-
-                if (count == 2) break;
             }
         }
 

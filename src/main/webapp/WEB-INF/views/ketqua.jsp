@@ -96,7 +96,7 @@
             </div>
            <!-- ĐIỂM THI -->
             <div class="score-section mt-4">
-                <div class="row g-3">
+                <div class="row">
                     <c:forEach var="mon" items="${diemThiSinh.diemTheoMon}">
                         <div class="col-md-2 col-6">
                             <div class="score-card${not empty mon.diem ? ' has-value' : ''}">
