@@ -223,12 +223,12 @@
 
                 <div class="pagination" style="display:flex;justify-content:center;align-items:center;gap:14px;margin-top:20px;">
                     <a class="btn btn-light border px-4 ${currentPage == 0 ? 'disabled' : ''}"
-                    href="?page=0&nganh=${nganhFilter}&tohop=${tohopFilter}&sort=${sortFilter}">
+                    href="?page=0&nganh=${nganhFilter}&tohop=${tohopFilter}&sort=${sortFilter}&trangthai=${trangThaiFilter}">
                         &lt;&lt;
                     </a>
 
                     <a class="btn btn-light border px-3 ${currentPage == 0 ? 'disabled' : ''}"
-                    href="?page=${currentPage - 1}&nganh=${nganhFilter}&tohop=${tohopFilter}&sort=${sortFilter}">
+                    href="?page=${currentPage - 1}&nganh=${nganhFilter}&tohop=${tohopFilter}&sort=${sortFilter}&trangthai=${trangThaiFilter}">
                         &lt;
                     </a>
 
@@ -237,12 +237,12 @@
                     </span>
 
                     <a class="btn btn-light border px-3 ${currentPage >= totalPages - 1 ? 'disabled' : ''}"
-                    href="?page=${currentPage + 1}&nganh=${nganhFilter}&tohop=${tohopFilter}&sort=${sortFilter}">
+                    href="?page=${currentPage + 1}&nganh=${nganhFilter}&tohop=${tohopFilter}&sort=${sortFilter}&trangthai=${trangThaiFilter}">
                         &gt;
                     </a>
 
                     <a class="btn btn-light border px-4 ${currentPage >= totalPages - 1 ? 'disabled' : ''}"
-                    href="?page=${totalPages - 1}&nganh=${nganhFilter}&tohop=${tohopFilter}&sort=${sortFilter}">
+                    href="?page=${totalPages - 1}&nganh=${nganhFilter}&tohop=${tohopFilter}&sort=${sortFilter}&trangthai=${trangThaiFilter}">
                         &gt;&gt;
                     </a>
                 </div>
@@ -332,7 +332,7 @@
             <div class="filter-nv-group">
                 <div class="filter-nv-label">Trạng thái</div>
                 <div class="status-chips" id="fnvStatusChips">
-                    <button class="status-chip chip-all selected" data-val="" onclick="fnvSelectStatus('')">Tất cả</button>
+                    <button class="status-chip chip-all" data-val="" onclick="fnvSelectStatus('')">Tất cả</button>
                     <button class="status-chip chip-dau" data-val="Đã đậu" onclick="fnvSelectStatus('Đã đậu')">
                         <i class="bi bi-check-circle-fill"></i> Đã đậu
                     </button>
@@ -844,15 +844,8 @@
 
         // ── Xóa tất cả bộ lọc ──
         window.fnvReset = function () {
-            var s = window._fnvState;
-            s.nganh = ''; s.tohop = ''; s.sort = null; s.trangThai = '';
-            var selN = _el('fnvNganh'); if (selN) selN.value = '';
-            var selT = _el('fnvToHop'); if (selT) selT.value = '';
-            var asc  = _el('fnvSortAsc');  if (asc)  asc.classList.remove('selected');
-            var desc = _el('fnvSortDesc'); if (desc) desc.classList.remove('selected');
-            syncStatusChips('');
-            syncActiveBadge();
-            fnvRender();
+            // Redirect về trang không có filter (bao gồm cả trangthai server-side)
+            window.location.href = 'ketqua?page=0';
         };
 
         window.fnvApply = function () {
@@ -871,7 +864,7 @@
             window.location.href = url;
         };
 
-        // ── Render ẩn/hiện row theo filter ──
+        // ── Render ẩn/hiện row theo filter (nganh/tohop là client-side, trangThai đã filter server-side) ──
         function fnvRender() {
             var s    = window._fnvState;
             var rows = Array.from(document.querySelectorAll('.nv-table tbody tr'));
@@ -880,10 +873,7 @@
                 var show = true;
                 if (s.nganh && tr.dataset.nganh !== s.nganh) show = false;
                 if (s.tohop && tr.dataset.tohop !== s.tohop) show = false;
-                if (s.trangThai) {
-                    var tt = (tr.dataset.trangThai || '').trim();
-                    if (tt !== s.trangThai) show = false;
-                }
+                // trangThai đã được filter server-side, không cần filter lại client-side
                 tr.style.display = show ? '' : 'none';
             });
 

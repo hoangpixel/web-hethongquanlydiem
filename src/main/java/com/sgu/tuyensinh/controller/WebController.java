@@ -132,7 +132,8 @@ public class WebController {
                                  @RequestParam(defaultValue = "0") int page,
                                  @RequestParam(required = false) String nganh,
                                  @RequestParam(required = false) String tohop,
-                                 @RequestParam(required = false) String sort) {
+                                 @RequestParam(required = false) String sort,
+                                 @RequestParam(required = false) String trangthai) {
     ThiSinh ts = (ThiSinh) session.getAttribute("thiSinhDangNhap");
     if (ts == null) return "redirect:/login";
 
@@ -143,6 +144,7 @@ public class WebController {
         nganh,
         tohop,
         sort,
+        trangthai,
         page,
         size
     );
@@ -185,6 +187,7 @@ if (diemTs != null && cc != null && cc.getDiemQuydoi() != null) {
         model.addAttribute("nganhFilter", nganh);
         model.addAttribute("tohopFilter", tohop);
         model.addAttribute("sortFilter", sort);
+        model.addAttribute("trangThaiFilter", trangthai);
 
         return "ketqua";
     }
