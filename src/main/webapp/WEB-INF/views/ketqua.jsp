@@ -154,7 +154,7 @@
                     </thead>
                     <tbody>
                         <c:forEach var="nv" items="${danhSachNV}">
-                            <tr>
+                            <tr data-trang-thai="${nv.nvKetQua}">
                                 <td><span class="rank-pill">${nv.nvTt}</span></td>
                                 <td><span class="ma-nganh">${nv.nvMaNganh}</span></td>
                                 <td><span class="method-badge">${nv.ttPhuongThuc}</span></td>
@@ -294,11 +294,18 @@
         <div class="filter-nv-modal">
             <div class="filter-nv-header">
                 <span class="filter-nv-title">
-                    <i class="bi bi-funnel-fill" style="color:#1d4ed8;"></i> Lọc & Sắp xếp
+                    <i class="bi bi-funnel-fill" style="color:#1d4ed8;"></i> Lọc & sắp xếp
+                    <span id="fnvActiveBadge" style="display:none;margin-left:6px;background:#1d4ed8;color:#fff;border-radius:999px;font-size:0.72rem;font-weight:700;padding:1px 8px;"></span>
                 </span>
-                <button class="filter-nv-close" onclick="closeFilterModal()" aria-label="Đóng">
-                    <i class="bi bi-x"></i>
-                </button>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <button class="filter-nv-reset" onclick="fnvReset()" id="fnvResetBtn" title="Xóa tất cả bộ lọc"
+                        style="display:none;border:none;background:none;color:#6b7280;font-size:0.78rem;cursor:pointer;padding:2px 6px;border-radius:6px;transition:background .15s;">
+                        <i class="bi bi-x-circle"></i> Xóa lọc
+                    </button>
+                    <button class="filter-nv-close" onclick="closeFilterModal()" aria-label="Đóng">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="filter-nv-group">
@@ -319,6 +326,26 @@
                         <option value="${t}" ${t == tohopFilter ? 'selected' : ''}>${t}</option>
                     </c:forEach>
                 </select>
+            </div>
+
+            <!-- FILTER TRẠNG THÁI -->
+            <div class="filter-nv-group">
+                <div class="filter-nv-label">Trạng thái</div>
+                <div class="status-chips" id="fnvStatusChips">
+                    <button class="status-chip chip-all selected" data-val="" onclick="fnvSelectStatus('')">Tất cả</button>
+                    <button class="status-chip chip-dau" data-val="Đã đậu" onclick="fnvSelectStatus('Đã đậu')">
+                        <i class="bi bi-check-circle-fill"></i> Đã đậu
+                    </button>
+                    <button class="status-chip chip-truot" data-val="Đã trượt" onclick="fnvSelectStatus('Đã trượt')">
+                        <i class="bi bi-x-circle-fill"></i> Đã trượt
+                    </button>
+                    <button class="status-chip chip-cho" data-val="Chờ xét" onclick="fnvSelectStatus('Chờ xét')">
+                        <i class="bi bi-hourglass-split"></i> Chờ xét
+                    </button>
+                    <button class="status-chip chip-other" data-val="Không xét" onclick="fnvSelectStatus('Không xét')">
+                        <i class="bi bi-dash-circle-fill"></i> Không xét
+                    </button>
+                </div>
             </div>
 
             <div class="filter-nv-group">
@@ -733,16 +760,45 @@
 
     // ── Lọc Nguyện Vọng ──
     (function () {
-        // Luôn khai báo các hàm global trước để tránh case init bị crash
-        window._fnvState = window._fnvState || { nganh: '', tohop: '', sort: null };
+        // State toàn cục — thêm trangThai
+        window._fnvState = window._fnvState || { nganh: '', tohop: '', sort: null, trangThai: '' };
 
         function _el(id) { return document.getElementById(id); }
+
+        // ── Cập nhật chip trạng thái ──
+        function syncStatusChips(val) {
+            document.querySelectorAll('.status-chip').forEach(function(btn) {
+                btn.classList.toggle('selected', btn.dataset.val === (val || ''));
+            });
+        }
+
+        // ── Cập nhật badge số filter đang active ──
+        function syncActiveBadge() {
+            var s = window._fnvState;
+            var count = 0;
+            if (s.nganh)     count++;
+            if (s.tohop)     count++;
+            if (s.trangThai) count++;
+            if (s.sort)      count++;
+            var badge = _el('fnvActiveBadge');
+            var resetBtn = _el('fnvResetBtn');
+            if (badge) {
+                badge.style.display = count > 0 ? 'inline-block' : 'none';
+                badge.textContent = count;
+            }
+            if (resetBtn) {
+                resetBtn.style.display = count > 0 ? 'inline-flex' : 'none';
+            }
+            // Badge trên nút phễu ngoài bảng
+            var btn = _el('btnFilterNV');
+            if (btn) btn.classList.toggle('active', count > 0);
+        }
 
         window.openFilterModal = function () {
             var overlay = _el('filterNVOverlay');
             if (!overlay) return;
 
-            var s = window._fnvState || { nganh: '', tohop: '', sort: null };
+            var s = window._fnvState;
             var selN = _el('fnvNganh');
             var selT = _el('fnvToHop');
 
@@ -751,9 +807,11 @@
 
             var asc = _el('fnvSortAsc');
             var desc = _el('fnvSortDesc');
-            if (asc) asc.classList.toggle('selected', s.sort === 'asc');
+            if (asc)  asc.classList.toggle('selected', s.sort === 'asc');
             if (desc) desc.classList.toggle('selected', s.sort === 'desc');
 
+            syncStatusChips(s.trangThai || '');
+            syncActiveBadge();
             overlay.classList.add('show');
         };
 
@@ -768,89 +826,105 @@
         };
 
         window.fnvSelectSort = function (dir) {
-            var s = window._fnvState || (window._fnvState = { nganh: '', tohop: '', sort: null });
+            var s = window._fnvState;
             s.sort = (s.sort === dir) ? null : dir;
-
-            var asc = _el('fnvSortAsc');
+            var asc  = _el('fnvSortAsc');
             var desc = _el('fnvSortDesc');
-            if (asc) asc.classList.toggle('selected', s.sort === 'asc');
+            if (asc)  asc.classList.toggle('selected', s.sort === 'asc');
             if (desc) desc.classList.toggle('selected', s.sort === 'desc');
+            syncActiveBadge();
+        };
+
+        // ── Chọn chip trạng thái ──
+        window.fnvSelectStatus = function (val) {
+            window._fnvState.trangThai = val;
+            syncStatusChips(val);
+            syncActiveBadge();
+        };
+
+        // ── Xóa tất cả bộ lọc ──
+        window.fnvReset = function () {
+            var s = window._fnvState;
+            s.nganh = ''; s.tohop = ''; s.sort = null; s.trangThai = '';
+            var selN = _el('fnvNganh'); if (selN) selN.value = '';
+            var selT = _el('fnvToHop'); if (selT) selT.value = '';
+            var asc  = _el('fnvSortAsc');  if (asc)  asc.classList.remove('selected');
+            var desc = _el('fnvSortDesc'); if (desc) desc.classList.remove('selected');
+            syncStatusChips('');
+            syncActiveBadge();
+            fnvRender();
         };
 
         window.fnvApply = function () {
+            var s    = window._fnvState;
             var selN = _el('fnvNganh');
             var selT = _el('fnvToHop');
-            var nganh = selN ? selN.value : '';
-            var tohop = selT ? selT.value : '';
-            var sort = (window._fnvState || {}).sort;
+            s.nganh = selN ? selN.value : '';
+            s.tohop = selT ? selT.value : '';
 
-            // để relative URL cho chắc (khỏi dính contextPath)
             var url = 'ketqua?page=0';
-            if (nganh) url += '&nganh=' + encodeURIComponent(nganh);
-            if (tohop) url += '&tohop=' + encodeURIComponent(tohop);
-            if (sort) url += '&sort=' + encodeURIComponent(sort);
+            if (s.nganh)     url += '&nganh='    + encodeURIComponent(s.nganh);
+            if (s.tohop)     url += '&tohop='    + encodeURIComponent(s.tohop);
+            if (s.sort)      url += '&sort='     + encodeURIComponent(s.sort);
+            if (s.trangThai) url += '&trangthai='+ encodeURIComponent(s.trangThai);
 
             window.location.href = url;
         };
 
-        // Init data attributes + populate dropdowns (không để crash kill toàn bộ script)
+        // ── Render ẩn/hiện row theo filter ──
+        function fnvRender() {
+            var s    = window._fnvState;
+            var rows = Array.from(document.querySelectorAll('.nv-table tbody tr'));
+
+            rows.forEach(function (tr) {
+                var show = true;
+                if (s.nganh && tr.dataset.nganh !== s.nganh) show = false;
+                if (s.tohop && tr.dataset.tohop !== s.tohop) show = false;
+                if (s.trangThai) {
+                    var tt = (tr.dataset.trangThai || '').trim();
+                    if (tt !== s.trangThai) show = false;
+                }
+                tr.style.display = show ? '' : 'none';
+            });
+
+            if (s.sort) {
+                var visible = rows.filter(function(r) { return r.style.display !== 'none'; });
+                visible.sort(function (a, b) {
+                    return s.sort === 'asc'
+                        ? parseFloat(a.dataset.diem || 0) - parseFloat(b.dataset.diem || 0)
+                        : parseFloat(b.dataset.diem || 0) - parseFloat(a.dataset.diem || 0);
+                });
+                var tbody = document.querySelector('.nv-table tbody');
+                visible.forEach(function (tr) { tbody.appendChild(tr); });
+            }
+
+            syncActiveBadge();
+        }
+
+        // ── Sync state từ URL querystring ──
+        try {
+            var params = new URLSearchParams(window.location.search || '');
+            var s0 = window._fnvState;
+            s0.nganh     = params.get('nganh')     || '';
+            s0.tohop     = params.get('tohop')     || '';
+            s0.trangThai = params.get('trangthai') || '';
+            var sort0 = params.get('sort');
+            s0.sort = (sort0 === 'asc' || sort0 === 'desc') ? sort0 : null;
+        } catch (e) { /* ignore */ }
+
+        // ── Init data-* attributes trên từng row ──
         try {
             document.querySelectorAll('.nv-table tbody tr').forEach(function (tr) {
                 var cells = tr.querySelectorAll('td');
                 if (cells.length < 5) return;
                 tr.dataset.nganh = (cells[1].textContent || '').trim();
                 tr.dataset.tohop = (cells[3].textContent || '').trim();
-                tr.dataset.diem = parseFloat((cells[4].textContent || '').trim()) || 0;
+                tr.dataset.diem  = parseFloat((cells[4].textContent || '').trim()) || 0;
+                // data-trang-thai đã được gán từ JSTL qua thuộc tính HTML
             });
+        } catch (e) { console.warn('Filter NV init failed:', e); }
 
-            var selN = _el('fnvNganh');
-            var selT = _el('fnvToHop');
-        } catch (e) {
-            console.warn('Filter NV init failed:', e);
-        }
-
-        function fnvRender() {
-            var s = window._fnvState;
-            var rows = Array.from(document.querySelectorAll('.nv-table tbody tr'));
-
-            // Filter
-            rows.forEach(function (tr) {
-                var show = true;
-                if (s.nganh && tr.dataset.nganh !== s.nganh) show = false;
-                if (s.tohop && tr.dataset.tohop !== s.tohop) show = false;
-                tr.style.display = show ? '' : 'none';
-            });
-
-            // Sort
-            if (s.sort) {
-                var visible = rows.filter(r => r.style.display !== 'none');
-                visible.sort(function (a, b) {
-                    return s.sort === 'asc'
-                        ? a.dataset.diem - b.dataset.diem
-                        : b.dataset.diem - a.dataset.diem;
-                });
-                var tbody = document.querySelector('.nv-table tbody');
-                visible.forEach(function (tr) { tbody.appendChild(tr); });
-            }
-
-            // Cập nhật trạng thái nút phễu
-            var hasFilter = s.nganh || s.tohop || s.sort;
-            document.getElementById('btnFilterNV').classList.toggle('active', !!hasFilter);
-        }
-
-        // Sync state từ querystring (để mở modal thấy đúng lựa chọn)
-        try {
-            var params = new URLSearchParams(window.location.search || '');
-            var s0 = window._fnvState || (window._fnvState = { nganh: '', tohop: '', sort: null });
-            s0.nganh = params.get('nganh') || '';
-            s0.tohop = params.get('tohop') || '';
-            var sort0 = params.get('sort');
-            s0.sort = (sort0 === 'asc' || sort0 === 'desc') ? sort0 : null;
-        } catch (e) {
-            // ignore
-        }
-
-        // Bind change events
+        // ── Bind change events ──
         var selN2 = _el('fnvNganh');
         if (selN2) {
             selN2.addEventListener('change', function () {
@@ -866,7 +940,8 @@
             });
         }
 
-        // Render lần đầu (tô trạng thái phễu)
+        // ── Render lần đầu + sync chip trạng thái ──
+        syncStatusChips(window._fnvState.trangThai || '');
         fnvRender();
     })();
     /* ==================== TÍNH MĐƯT ==================== */

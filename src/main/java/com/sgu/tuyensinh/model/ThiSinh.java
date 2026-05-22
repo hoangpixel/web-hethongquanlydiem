@@ -36,7 +36,7 @@ public class ThiSinh {
     @Column(name = "email", length = 100)
     private String email;
 
-    @Column(name = "dienThoai", length = 20)
+    @Column(name = "dien_thoai", length = 20)
     private String sdt;
 
     @Column(name = "doituong", length = 50)
@@ -45,7 +45,7 @@ public class ThiSinh {
     @Column(name = "khuvuc", length = 50)
     private String khuVuc;
 
-    @Column(name = "ngaySinh")
+    @Column(name = "ngay_sinh")
     private LocalDateTime ngaySinh;
 
 

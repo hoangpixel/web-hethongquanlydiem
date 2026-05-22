@@ -516,3 +516,47 @@ body {
 {
     color: white !important;
 }
+
+/* ── Status Chips (filter trạng thái) ── */
+.status-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 14px;
+    border-radius: 20px;
+    border: 1.5px solid #d1d5db;
+    background: #f9fafb;
+    color: #6b7280;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+.status-chip:hover { filter: brightness(0.96); }
+
+/* Tất cả */
+.chip-all.selected          { background: #eff6ff; color: #1d4ed8; border-color: #93c5fd; }
+.chip-all:not(.selected):hover { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+
+/* Đã đậu */
+.chip-dau.selected          { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
+.chip-dau:not(.selected):hover { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
+
+/* Đã trượt */
+.chip-truot.selected          { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+.chip-truot:not(.selected):hover { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+
+/* Chờ xét */
+.chip-cho.selected          { background: #e0f2fe; color: #0369a1; border-color: #7dd3fc; }
+.chip-cho:not(.selected):hover { background: #e0f2fe; color: #0369a1; border-color: #bae6fd; }
+
+/* Không xét */
+.chip-other.selected          { background: #fef3c7; color: #78350f; border-color: #fcd34d; }
+.chip-other:not(.selected):hover { background: #fef3c7; color: #78350f; border-color: #fde68a; }

@@ -265,27 +265,23 @@ if (diemTs != null && cc != null && cc.getDiemQuydoi() != null) {
         double diemThxt = nv.getDiemThxt()     != null ? nv.getDiemThxt()     : 0.0;
 
         DiemCongXetTuyen dcRow = timDiemCongXetTuyen(nv, d);
-        double diemCongCC = (dcRow != null && dcRow.getDiemCC() != null) ? dcRow.getDiemCC() : 0.0;
-        double diemCongUtxtDb = (dcRow != null && dcRow.getDiemUtxt() != null) ? dcRow.getDiemUtxt() : 0.0;
-
-        String cccd = d != null && d.getCccd() != null ? d.getCccd().trim() : "";
-        String maNganh = nv.getNvMaNganh() != null ? nv.getNvMaNganh().trim() : "";
-        String maToHop = nv.getTtThm() != null ? nv.getTtThm().trim().toUpperCase() : "";
-        double diemCongUtxtCalc = tinhDiemCongGiaiThuong(cccd, maNganh, maToHop);
-
-        double diemCongUtxt = (diemCongUtxtDb != 0.0) ? diemCongUtxtDb : diemCongUtxtCalc;
+        double diemCongCC    = (dcRow != null && dcRow.getDiemCC()   != null) ? dcRow.getDiemCC()   : 0.0;
+        // Điểm cộng giải thưởng (diemUtxt) CHỈ lấy từ xt_diemcongxetuyen theo đúng
+        // cccd + maNganh + maToHop + phuongThuc — không fallback sang bảng khác.
+        double diemCongUtxt  = (dcRow != null && dcRow.getDiemUtxt() != null) ? dcRow.getDiemUtxt() : 0.0;
 
         // Hiển thị chi tiết (CC, giải thưởng) theo đúng giá trị thực tế,
         // nhưng tổng điểm cộng (ĐC) bị giới hạn tối đa 3.00.
         final double MAX_DIEM_CONG = 3.0;
-        double diemCongCCRaw = Math.max(0.0, diemCongCC);
+        double diemCongCCRaw   = Math.max(0.0, diemCongCC);
         double diemCongUtxtRaw = Math.max(0.0, diemCongUtxt);
         double tongDiemCongRaw = diemCongCCRaw + diemCongUtxtRaw;
-        double diemCong = Math.min(MAX_DIEM_CONG, tongDiemCongRaw);
+        double diemCong        = Math.min(MAX_DIEM_CONG, tongDiemCongRaw);
 
         // Gán lại để map.put hiển thị đúng breakdown
-        diemCongCC = diemCongCCRaw;
+        diemCongCC   = diemCongCCRaw;
         diemCongUtxt = diemCongUtxtRaw;
+
 
         double diemUtqd = nv.getDiemUtqd()     != null ? nv.getDiemUtqd()     : 0.0;
         double diemXt   = nv.getDiemXetTuyen() != null ? nv.getDiemXetTuyen() : 0.0;
@@ -665,38 +661,93 @@ if (diemTs != null && cc != null && cc.getDiemQuydoi() != null) {
         }
 
         String cccd = d.getCccd() != null ? d.getCccd().trim() : "";
-
-        String maNganh = nv.getNvMaNganh() != null ? nv.getNvMaNganh().trim() : "";
-        maNganh = maNganh.replaceAll("(?i)-CLC.*$", "").trim();
-
+        String maNganh = nv.getNvMaNganh() != null ? nv.getNvMaNganh().replaceAll("(?i)-CLC.*$", "").trim() : "";
         String maToHop = nv.getTtThm() != null ? nv.getTtThm().trim().toUpperCase() : "";
         String phuongThuc = nv.getTtPhuongThuc() != null ? nv.getTtPhuongThuc().trim() : "";
+        String phuongThucNgoc = chuanHoaPhuongThuc(phuongThuc);
+
+        // ── DEBUG: In ra các giá trị đang dùng để tìm kiếm ──
+        log.info("[timDiemCong] cccd='{}' | maNganh='{}' | maToHop='{}' | phuongThuc='{}' | phuongThucNgoc='{}'",
+                cccd, maNganh, maToHop, phuongThuc, phuongThucNgoc);
 
         DiemCongXetTuyen dc = null;
 
+        // Bước 1: tìm bằng dc_keys gốc (phuongThuc đầy đủ)
         if (!cccd.isEmpty() && !maNganh.isEmpty() && !maToHop.isEmpty() && !phuongThuc.isEmpty()) {
             String dcKeys = cccd + "_" + maNganh + "_" + maToHop + "_" + phuongThuc;
+            log.info("[timDiemCong] B1 dcKeys='{}'", dcKeys);
             dc = diemCongXetTuyenRepository.findByDcKeys(dcKeys);
+            if (dc != null) log.info("[timDiemCong] B1 FOUND → diemCC={}, diemUtxt={}", dc.getDiemCC(), dc.getDiemUtxt());
         }
 
+        // Bước 2: tìm bằng dc_keys đã chuẩn hóa
+        if (dc == null && !phuongThucNgoc.equals(phuongThuc)
+                && !cccd.isEmpty() && !maNganh.isEmpty() && !maToHop.isEmpty()) {
+            String dcKeysNgoc = cccd + "_" + maNganh + "_" + maToHop + "_" + phuongThucNgoc;
+            log.info("[timDiemCong] B2 dcKeysNgoc='{}'", dcKeysNgoc);
+            dc = diemCongXetTuyenRepository.findByDcKeys(dcKeysNgoc);
+            if (dc != null) log.info("[timDiemCong] B2 FOUND → diemCC={}, diemUtxt={}", dc.getDiemCC(), dc.getDiemUtxt());
+        }
+
+        // Bước 3: tìm trim/upper theo phuongThuc đầy đủ
         if (dc == null) {
             dc = diemCongXetTuyenRepository.findMatchTrimmed(cccd, maNganh, maToHop, phuongThuc);
+            if (dc != null) log.info("[timDiemCong] B3 FOUND → diemCC={}, diemUtxt={}", dc.getDiemCC(), dc.getDiemUtxt());
         }
 
+        // Bước 4: tìm trim/upper theo phuongThuc đã chuẩn hóa
+        if (dc == null && !phuongThucNgoc.equals(phuongThuc)) {
+            dc = diemCongXetTuyenRepository.findMatchTrimmed(cccd, maNganh, maToHop, phuongThucNgoc);
+            if (dc != null) log.info("[timDiemCong] B4 FOUND → diemCC={}, diemUtxt={}", dc.getDiemCC(), dc.getDiemUtxt());
+        }
+
+        // Bước 5: findBy thông thường (phuongThuc đầy đủ)
         if (dc == null) {
             dc = diemCongXetTuyenRepository.findByCccdAndMaNganhAndMaToHopAndPhuongThuc(
-                    cccd,
-                    maNganh,
-                    maToHop,
-                    phuongThuc
-            );
+                    cccd, maNganh, maToHop, phuongThuc);
+            if (dc != null) log.info("[timDiemCong] B5 FOUND → diemCC={}, diemUtxt={}", dc.getDiemCC(), dc.getDiemUtxt());
+        }
+
+        // Bước 6: findBy với phuongThuc đã chuẩn hóa
+        if (dc == null && !phuongThucNgoc.equals(phuongThuc)) {
+            dc = diemCongXetTuyenRepository.findByCccdAndMaNganhAndMaToHopAndPhuongThuc(
+                    cccd, maNganh, maToHop, phuongThucNgoc);
+            if (dc != null) log.info("[timDiemCong] B6 FOUND → diemCC={}, diemUtxt={}", dc.getDiemCC(), dc.getDiemUtxt());
+        }
+
+        // Bước 7: Fallback LIKE prefix
+        if (dc == null && !cccd.isEmpty() && !maNganh.isEmpty() && !maToHop.isEmpty() && !phuongThuc.isEmpty()) {
+            List<DiemCongXetTuyen> list =
+                diemCongXetTuyenRepository.findByPhuongThucPrefix(cccd, maNganh, maToHop, phuongThuc);
+            if (list != null && !list.isEmpty()) {
+                dc = list.get(0);
+                log.info("[timDiemCong] B7 FOUND via prefix → diemCC={}, diemUtxt={}", dc.getDiemCC(), dc.getDiemUtxt());
+            }
         }
 
         if (dc == null) {
-            log.debug("Không tìm thấy dòng điểm cộng: cccd={}, maNganh={}, maToHop={}, phuongThuc={} (nvKeys={})",
+            log.warn("[timDiemCong] KHÔNG TÌM THẤY: cccd='{}' maNganh='{}' maToHop='{}' phuongThuc='{}' (nvKeys={})",
                     cccd, maNganh, maToHop, phuongThuc, nv.getNvKeys());
+        } else {
+            log.info("[timDiemCong] KẾT QUẢ CUỐI: diemCC={} | diemUtxt={} | diemTong={}",
+                    dc.getDiemCC(), dc.getDiemUtxt(), dc.getDiemTong());
         }
 
         return dc;
     }
-}
+
+
+    /**
+     * Chuẩn hóa tên phương thức từ bảng nguyện vọng về tên ngắn lưu trong bảng điểm cộng.
+     * Ví dụ: "ĐGNL HCM" → "ĐGNL", "Xét tuyển THPT" → "THPT", "Tuyển thẳng HSG" → "Tuyển thẳng"
+     */
+    private String chuanHoaPhuongThuc(String pt) {
+        if (pt == null) return "";
+        String upper = pt.trim().toUpperCase();
+        if (upper.contains("TUYỂN THẲNG") || upper.contains("TUYEN THANG")) return "Tuyển thẳng";
+        if (upper.contains("ĐGNL") || upper.contains("DGNL"))               return "ĐGNL";
+        if (upper.contains("V-SAT") || upper.contains("VSAT"))               return "V-SAT";
+        if (upper.contains("THPT"))                                           return "THPT";
+        return pt.trim();
+    }
+}
